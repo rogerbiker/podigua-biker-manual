@@ -1,0 +1,10 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /photos/{allPaths=**} {
+      allow read: if true;
+      // Allow writes only if the adminToken metadata field is set correctly
+      allow write: if request.resource.metadata.adminToken == "podigua2026";
+    }
+  }
+}

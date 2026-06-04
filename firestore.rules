@@ -1,0 +1,35 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Security rules for the Biker Manual reflections collection
+    match /reflections/{document} {
+      // Allow any user to read and submit reflections
+      allow read, create: if true;
+      
+      // Prevent editing or deletion to safeguard data
+      allow update, delete: if false;
+    }
+    
+    // Security rules for the photos collection
+    match /photos/{document} {
+      allow read: if true;
+      allow create: if request.resource.data.adminToken == "podigua2026";
+      allow delete: if resource.data.adminToken == "podigua2026";
+      allow update: if false;
+    }
+    
+    // Security rules for the videos collection
+    match /videos/{document} {
+      allow read: if true;
+      allow create, update: if request.resource.data.adminToken == "podigua2026";
+      allow delete: if resource.data.adminToken == "podigua2026" || !("adminToken" in resource.data);
+    }
+    
+    // Default fallback rule for other collections (keeps them secure under auth)
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

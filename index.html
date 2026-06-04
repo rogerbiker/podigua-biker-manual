@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="description" content="2026 剖地瓜壯騎行程手冊 - 富貴角燈塔出發，鵝鑾鼻燈塔完成；八天七夜，橫越台灣山海。為 3480 自行車隊夥伴、扶輪社友、隊員家屬與支援團隊提供的專屬手機手冊。" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>2026 剖地瓜壯騎行程手冊</title>
+    <script>
+      // 偵測是否因為部署新版導致舊版 JS 檔找不到而報錯，若有則自動重整頁面載入新版
+      window.addEventListener('error', function(e) {
+        var isChunkError = e.message && (
+          e.message.indexOf('dynamically imported module') !== -1 ||
+          e.message.indexOf('Failed to fetch') !== -1
+        );
+        if (isChunkError) {
+          console.warn('偵測到模組載入錯誤，自動重整頁面以載入最新版本...');
+          window.location.reload();
+        }
+      }, true);
+    </script>
+  </head>
+  <body class="bg-slate-50 text-slate-800 antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
