@@ -72,6 +72,8 @@ export default function MediaPage() {
   // Video links states (Roger inputs)
   const [videoUrlInput, setVideoUrlInput] = useState("");
   const [savingVideo, setSavingVideo] = useState(false);
+  const [deletingVideo, setDeletingVideo] = useState(false);
+  const [videoStatusMessage, setVideoStatusMessage] = useState({ text: "", type: "" });
 
   // Photo uploads states (Roger multiple uploads)
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -129,6 +131,11 @@ export default function MediaPage() {
     return () => unsubscribe();
   }, [selectedDay]);
 
+  // Pre-populate videoUrlInput when Day changes or video document updates
+  useEffect(() => {
+    setVideoUrlInput(video?.url || "");
+  }, [selectedDay, video?.url]);
+
   useEffect(() => {
     Promise.resolve().then(() => {
       setIsPlayerActive(false);
@@ -175,10 +182,23 @@ export default function MediaPage() {
     return videoId ? `https://www.youtube.com/embed/${videoId}` : "";
   };
 
+  // Helper to validate URL format
+  const isValidUrl = (url) => {
+    try {
+      new URL(url);
+      return url.startsWith("http://") || url.startsWith("https://");
+    } catch (_) {
+      return false;
+    }
+  };
+
   // Save Video Link
   const handleSaveVideoUrl = async (e) => {
     e.preventDefault();
-    if (!videoUrlInput.trim()) {
+    if (savingVideo) return;
+
+    const trimmedUrl = videoUrlInput.trim();
+    if (!trimmedUrl) {
       alert("請貼上影片網址連結！");
       return;
     }
@@ -187,53 +207,84 @@ export default function MediaPage() {
       return;
     }
 
+    // URL format validation
+    if (!isValidUrl(trimmedUrl)) {
+      alert("請輸入有效的影片網址（必須以 http:// 或 https:// 開頭）！");
+      return;
+    }
+
+    // Check link type for warnings
+    const isYoutube = getYouTubeVideoId(trimmedUrl) !== "";
+    const isGooglePhotos = trimmedUrl.includes("photos.app.goo.gl") || trimmedUrl.includes("photos.google.com");
+    if (!isYoutube && !isGooglePhotos) {
+      if (!window.confirm("⚠️ 偵測到此連結既非 YouTube 也非 Google 相簿網址。這可能會導致車友點開後無法正常觀看。確定要儲存此網址嗎？")) {
+        return;
+      }
+    }
+
     setSavingVideo(true);
+    setVideoStatusMessage({ text: "", type: "" });
     let success = false;
     let errMsg = "";
 
     try {
       await setDoc(doc(db, "videos", `day-${selectedDay}`), {
         day: selectedDay,
-        url: videoUrlInput.trim(),
+        url: trimmedUrl,
         adminToken: adminPassword,
-        createdAt: new Date().toISOString()
-      });
-      setVideoUrlInput("");
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
       success = true;
     } catch (error) {
       console.error("Error saving video URL:", error);
       errMsg = error.message || String(error);
     } finally {
-      // Ensure loading state is reset immediately when the async process completes
       setSavingVideo(false);
     }
 
-    // Trigger alert in the next event loop tick so the browser/React has time to repaint the button out of "Saving..." state
     if (success) {
+      setVideoStatusMessage({ text: `🎉 Day ${selectedDay} 短影片連結更新完成！`, type: "success" });
       setTimeout(() => {
-        alert("🎉 短影片連結儲存成功！");
+        alert(`🎉 Day ${selectedDay} 短影片連結更新完成！`);
       }, 50);
     } else {
+      setVideoStatusMessage({ text: `❌ 更新失敗：${errMsg}`, type: "error" });
       setTimeout(() => {
-        alert("儲存影片網址失敗：" + errMsg);
+        alert(`更新失敗：${errMsg}`);
       }, 50);
     }
   };
 
   // Delete Video Link
   const handleDeleteVideo = async () => {
-    if (!isPasswordVerified) return;
-    if (!window.confirm(`確定要刪除 Day ${selectedDay} 的短影片連結嗎？`)) return;
+    if (!isPasswordVerified || deletingVideo) return;
+    if (!window.confirm(`確定要清除 Day ${selectedDay} 的短影片連結，並還原為預設影片嗎？`)) return;
+
+    setDeletingVideo(true);
+    setVideoStatusMessage({ text: "", type: "" });
+    let success = false;
+    let errMsg = "";
 
     try {
       await deleteDoc(doc(db, "videos", `day-${selectedDay}`));
-      setTimeout(() => {
-        alert("影片連結已成功刪除！");
-      }, 50);
+      setVideoUrlInput("");
+      success = true;
     } catch (error) {
       console.error("Error deleting video:", error);
+      errMsg = error.message || String(error);
+    } finally {
+      setDeletingVideo(false);
+    }
+
+    if (success) {
+      setVideoStatusMessage({ text: `🗑️ Day ${selectedDay} 影片連結已清除，已還原為預設影片。`, type: "success" });
       setTimeout(() => {
-        alert("刪除影片網址失敗：" + (error.message || String(error)));
+        alert("影片連結已成功清除，已還原為預設影片。");
+      }, 50);
+    } else {
+      setVideoStatusMessage({ text: `❌ 清除失敗：${errMsg}`, type: "error" });
+      setTimeout(() => {
+        alert(`清除失敗：${errMsg}`);
       }, 50);
     }
   };
@@ -702,6 +753,20 @@ export default function MediaPage() {
                   </a>
                 </div>
               )}
+              {videoStatusMessage.text && (
+                <div className={`text-[10px] p-2.5 rounded-xl border font-bold flex items-center space-x-1.5 ${
+                  videoStatusMessage.type === "success" 
+                    ? "bg-green-50 text-green-700 border-green-200 animate-fade-in" 
+                    : "bg-red-50 text-red-700 border-red-200 animate-fade-in"
+                }`}>
+                  {videoStatusMessage.type === "success" ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
+                  ) : (
+                    <AlertTriangle className="w-3.5 h-3.5 text-red-600 flex-shrink-0" />
+                  )}
+                  <span>{videoStatusMessage.text}</span>
+                </div>
+              )}
               <form onSubmit={handleSaveVideoUrl} className="flex gap-2">
                 <input
                   type="text"
@@ -709,11 +774,14 @@ export default function MediaPage() {
                   onChange={(e) => setVideoUrlInput(e.target.value)}
                   placeholder={video ? "輸入新網址以覆寫目前影片" : "請貼上當日影片網址 (如 Google Photos 連結)"}
                   className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:bg-white"
+                  disabled={savingVideo || deletingVideo}
                 />
                 <button
                   type="submit"
-                  disabled={savingVideo}
-                  className="bg-biker-navy hover:bg-biker-navy-dark text-white font-bold py-2 px-4 rounded-xl text-xs shadow-sm transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+                  disabled={savingVideo || deletingVideo}
+                  className={`bg-biker-navy hover:bg-biker-navy-dark text-white font-bold py-2 px-4 rounded-xl text-xs shadow-sm transition-all active:scale-95 cursor-pointer whitespace-nowrap ${
+                    (savingVideo || deletingVideo) ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   {savingVideo ? "儲存中..." : "儲存影片網址"}
                 </button>
@@ -723,10 +791,13 @@ export default function MediaPage() {
                   <button
                     type="button"
                     onClick={handleDeleteVideo}
-                    className="text-[10px] font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1 rounded-lg transition-colors flex items-center space-x-1"
+                    disabled={savingVideo || deletingVideo}
+                    className={`text-[10px] font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg transition-colors flex items-center space-x-1 cursor-pointer ${
+                      (savingVideo || deletingVideo) ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
                     <Trash2 className="w-3 h-3" />
-                    <span>刪除資料庫影片網址 (還原為預設)</span>
+                    <span>{deletingVideo ? "正在清除..." : `清除 Day ${selectedDay} 影片連結，回到預設狀態`}</span>
                   </button>
                 </div>
               )}
