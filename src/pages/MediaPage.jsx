@@ -562,7 +562,10 @@ export default function MediaPage() {
           </h3>
 
           {loadingVideo ? (
-            <div className="text-center py-8 text-xs text-slate-400">影片資料載入中...</div>
+            <div className="text-center py-12 text-xs text-slate-400">
+              <RefreshCw className="w-6 h-6 mx-auto mb-2 text-slate-300 animate-spin" />
+              <span>影片資料載入中...</span>
+            </div>
           ) : activeVideoUrl ? (
             <div className="space-y-3">
               {/* If YouTube type (directly plays inline) */}
@@ -783,7 +786,12 @@ export default function MediaPage() {
                     (savingVideo || deletingVideo) ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >
-                  {savingVideo ? "儲存中..." : "儲存影片網址"}
+                  {savingVideo ? (
+                    <span className="flex items-center space-x-1.5">
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                      <span>儲存中...</span>
+                    </span>
+                  ) : "儲存影片網址"}
                 </button>
               </form>
               {video && (
@@ -796,8 +804,17 @@ export default function MediaPage() {
                       (savingVideo || deletingVideo) ? "opacity-50 cursor-not-allowed" : ""
                     }`}
                   >
-                    <Trash2 className="w-3 h-3" />
-                    <span>{deletingVideo ? "正在清除..." : `清除 Day ${selectedDay} 影片連結，回到預設狀態`}</span>
+                    {deletingVideo ? (
+                      <span className="flex items-center space-x-1">
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                        <span>正在清除...</span>
+                      </span>
+                    ) : (
+                      <>
+                        <Trash2 className="w-3 h-3" />
+                        <span>清除 Day {selectedDay} 影片連結，回到預設狀態</span>
+                      </>
+                    )}
                   </button>
                 </div>
               )}

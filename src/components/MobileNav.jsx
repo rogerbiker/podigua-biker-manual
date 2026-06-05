@@ -1,4 +1,4 @@
-import { Bike, MapPin, Users, Compass, MessageSquare } from "lucide-react";
+import { Bike, BookOpen, Users, Compass, MessageSquare } from "lucide-react";
 
 export default function MobileNav({ currentTab, setCurrentTab, onSelectDay }) {
   const menuItems = [
@@ -21,8 +21,8 @@ export default function MobileNav({ currentTab, setCurrentTab, onSelectDay }) {
     },
     {
       id: "route",
-      label: "路線",
-      icon: MapPin,
+      label: "記錄",
+      icon: BookOpen,
       onClick: () => {
         setCurrentTab("route");
       },
@@ -30,7 +30,7 @@ export default function MobileNav({ currentTab, setCurrentTab, onSelectDay }) {
     },
     {
       id: "reflections",
-      label: "心得",
+      label: "感想",
       icon: MessageSquare,
       onClick: () => setCurrentTab("reflections"),
       isActive: currentTab === "reflections",

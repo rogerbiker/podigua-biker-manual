@@ -241,15 +241,7 @@ export default function DayCard({ dayData, isExpanded, onToggle, setCurrentTab }
                   )}
                 </div>
                 
-                {day === 1 && (
-                  <button
-                    onClick={() => setCurrentTab("story-day1")}
-                    className="w-full mt-3 flex items-center justify-center space-x-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-650 hover:to-amber-700 text-white transition-all py-2.5 px-4 rounded-xl text-xs font-bold shadow-sm active:scale-95 cursor-pointer"
-                  >
-                    <FileText className="w-4 h-4 text-white" />
-                    <span>📖 閱讀今日圖文手記</span>
-                  </button>
-                )}
+
 
                 <p className="text-[10px] text-slate-400 mt-2.5 text-center font-medium">
                   ※ 導航起點預設為您手機的目前 GPS 位置

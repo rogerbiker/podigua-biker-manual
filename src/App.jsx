@@ -61,7 +61,7 @@ export default function App() {
           />
         );
       case "route":
-        return <RoutePage />;
+        return <RoutePage setCurrentTab={setCurrentTab} />;
       case "reflections":
         return <ReflectionPage />;
       case "media":

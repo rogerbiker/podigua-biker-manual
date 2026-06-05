@@ -15,8 +15,40 @@ export default function HomePage({ setCurrentTab }) {
   const eluanbiImg = `${import.meta.env.BASE_URL}images/hero/eluanbi-finish.webp`;
 
   return (
-    <div className="fade-in max-w-4xl mx-auto px-4 py-6 md:py-10 pb-24 md:pb-12">
-      {/* 第一層：完騎證書主視覺 */}
+    <div className="fade-in w-full">
+      {/* 首頁 Hero 區塊：融入水彩山海背景，橫式延展，無框線無陰影以自然銜接下方證書 */}
+      <div 
+        className="relative w-full text-center flex flex-col items-center justify-start pt-8 pb-14 md:pt-14 md:pb-24 bg-[size:100%_auto] md:bg-cover bg-bottom bg-no-repeat bg-white"
+        style={{ 
+          backgroundImage: `url(${import.meta.env.BASE_URL}images/hero/landscape-bg.jpg)`,
+        }}
+      >
+        {/* 底部自然淡出至 slate-50 漸層，實現無縫銜接 */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-50 pointer-events-none" />
+        
+        {/* 內容區：置於山海圖上方天空留白處，與底部的插圖分離以防重疊，文字選用優雅的宋體 */}
+        <div className="relative z-10 space-y-3 px-4 max-w-3xl">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-wider text-slate-800 font-serif leading-tight drop-shadow-xs">
+            熟齡剖地瓜壯騎
+          </h1>
+          
+          <div className="w-16 h-0.5 bg-biker-orange mx-auto rounded-full my-1.5"></div>
+          
+          <div className="space-y-1">
+            <p className="text-xs sm:text-sm md:text-base lg:text-lg text-slate-700 font-bold max-w-xl mx-auto leading-relaxed">
+              2026 富貴角燈塔至鵝鑾鼻燈塔壯騎紀錄
+            </p>
+            
+            <p className="text-[10px] sm:text-xs md:text-sm text-slate-400 font-medium leading-relaxed">
+              富貴角燈塔出發，鵝鑾鼻燈塔完成；八天七夜，橫越台灣山海
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 主要內容容器，維持原有的 max-w-4xl mx-auto px-4 結構，與 Hero 自然銜接，縮小間距以緊湊銜接 */}
+      <div className="max-w-4xl mx-auto px-4 mt-2 md:mt-4">
+        {/* 第一層：完騎證書主視覺 */}
       <div className="mb-6 rounded-2xl overflow-hidden shadow-md border border-slate-100 bg-white">
         <img
           src={`${import.meta.env.BASE_URL}images/hero/2026-certificate.jpg`}
@@ -72,58 +104,61 @@ export default function HomePage({ setCurrentTab }) {
         {/* 隨行手記 Banner */}
         <div 
           onClick={() => setCurrentTab("story-day1")}
-          className="bg-gradient-to-br from-amber-800 to-orange-950 border border-amber-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between text-left cursor-pointer group"
+          className="bg-gradient-to-br from-amber-500/10 to-orange-500/15 border border-amber-200/50 hover:border-amber-300/80 hover:shadow-md hover:-translate-y-0.5 rounded-2xl p-5 md:p-6 transition-all duration-300 flex justify-between items-center gap-4 text-left cursor-pointer group"
         >
-          <div>
-            <div className="inline-flex p-2 bg-amber-700/50 text-amber-200 rounded-xl mb-3">
-              <BookOpen className="w-5 h-5" />
-            </div>
-            <h4 className="text-sm font-black text-white group-hover:text-biker-orange transition-colors">📖 隨行手記專題</h4>
-            <p className="text-xs text-amber-200/80 font-normal mt-1 leading-relaxed">
-              記錄每日壯騎的點滴挑戰與精彩故事，點擊閱讀 Day 1 圖文手記。
+          <div className="flex-1 min-w-0 pr-2">
+            <h4 className="text-sm sm:text-base font-black text-slate-800 leading-tight">
+              壯騎故事｜每日圖文手記
+            </h4>
+            <p className="text-xs text-slate-500 font-medium mt-2 leading-relaxed">
+              閱讀 Day1 到 Day8 的每日圖文故事，重溫山海挑戰與團隊記憶。
             </p>
           </div>
-          <span className="text-[11px] text-biker-orange font-bold mt-4 inline-flex items-center">
-            立即閱讀 ➔
-          </span>
+          <div className="flex-shrink-0">
+            <span className="inline-flex items-center justify-center bg-amber-600 group-hover:bg-amber-700 text-white font-black py-2 px-3.5 rounded-xl text-xs shadow-xs transition-all active:scale-95 whitespace-nowrap">
+              閱讀故事
+            </span>
+          </div>
         </div>
 
-        {/* 單車日記本 Banner */}
+        {/* 感想紀錄 Banner */}
         <div 
           onClick={() => setCurrentTab("reflections")}
-          className="bg-[#132354] border border-[#1d2d60] rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between text-left cursor-pointer group"
+          className="bg-gradient-to-br from-blue-500/10 to-indigo-500/15 border border-blue-200/50 hover:border-blue-300/80 hover:shadow-md hover:-translate-y-0.5 rounded-2xl p-5 md:p-6 transition-all duration-300 flex justify-between items-center gap-4 text-left cursor-pointer group"
         >
-          <div>
-            <div className="inline-flex p-2 bg-[#1e2e6b] text-blue-300 rounded-xl mb-3">
-              <MessageSquare className="w-5 h-5" />
-            </div>
-            <h4 className="text-sm font-black text-white group-hover:text-biker-orange transition-colors">✍️ 單車日記本</h4>
-            <p className="text-xs text-blue-200/80 font-normal mt-1 leading-relaxed">
-              記錄今天的挑戰與吐槽！點擊寫下您的壯騎日記。
+          <div className="flex-1 min-w-0 pr-2">
+            <h4 className="text-sm sm:text-base font-black text-slate-800 leading-tight">
+              感想紀錄｜留下你的文字感想
+            </h4>
+            <p className="text-xs text-slate-500 font-medium mt-2 leading-relaxed">
+              記錄自己的騎乘感受、挑戰片段與難忘時刻。
             </p>
           </div>
-          <span className="text-[11px] text-biker-orange font-bold mt-4 inline-flex items-center">
-            開始記錄 ➔
-          </span>
+          <div className="flex-shrink-0">
+            <span className="inline-flex items-center justify-center bg-biker-navy-light group-hover:bg-blue-600 text-white font-black py-2 px-3.5 rounded-xl text-xs shadow-xs transition-all active:scale-95 whitespace-nowrap">
+              開始記錄
+            </span>
+          </div>
         </div>
 
         {/* 影像紀錄 Banner */}
         <div 
           onClick={() => setCurrentTab("media")}
-          className="bg-gradient-to-br from-emerald-800 to-emerald-950 border border-emerald-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between text-left cursor-pointer group"
+          className="bg-gradient-to-br from-emerald-500/10 to-teal-500/15 border border-emerald-200/50 hover:border-emerald-300/80 hover:shadow-md hover:-translate-y-0.5 rounded-2xl p-5 md:p-6 transition-all duration-300 flex justify-between items-center gap-4 text-left cursor-pointer group"
         >
-          <div>
-            <div className="inline-flex p-2 bg-emerald-700/50 text-emerald-200 rounded-xl mb-3">
-              <Camera className="w-5 h-5" />
-            </div>
-            <h4 className="text-sm font-black text-white group-hover:text-biker-orange transition-colors">📸 影像紀錄牆</h4>
-            <p className="text-xs text-emerald-200/80 font-normal mt-1 leading-relaxed">
-              重溫今日挑戰！瀏覽精彩美照與影片，支持高清相片下載。
+          <div className="flex-1 min-w-0 pr-2">
+            <h4 className="text-sm sm:text-base font-black text-slate-800 leading-tight">
+              影像紀錄｜照片與短影片
+            </h4>
+            <p className="text-xs text-slate-500 font-medium mt-2 leading-relaxed">
+              瀏覽每日精彩照片與短影片，重回壯騎現場。
             </p>
           </div>
-          <span className="text-[11px] text-biker-orange font-bold mt-4 inline-flex items-center">
-            立即瀏覽 ➔
-          </span>
+          <div className="flex-shrink-0">
+            <span className="inline-flex items-center justify-center bg-biker-green group-hover:bg-green-700 text-white font-black py-2 px-3.5 rounded-xl text-xs shadow-xs transition-all active:scale-95 whitespace-nowrap">
+              瀏覽影像
+            </span>
+          </div>
         </div>
       </div>
 
@@ -246,11 +281,12 @@ export default function HomePage({ setCurrentTab }) {
               onClick={() => setCurrentTab("route")}
               className="w-full text-center bg-biker-orange hover:bg-biker-orange-dark text-white text-xs font-black py-2.5 px-4 rounded-xl transition-all duration-150 cursor-pointer shadow-sm hover:shadow active:scale-95 transform"
             >
-              查看詳細每日路線 ➡️
+              瀏覽壯騎紀錄 ➡️
             </button>
           </div>
         </div>
       </div>
     </div>
+  </div>
   );
 }

@@ -1,17 +1,17 @@
 import { useState } from "react";
-import { Bike, Utensils, Users, Bell, DollarSign, Compass, Film, Menu, X, MapPin, MessageSquare, Camera } from "lucide-react";
+import { Bike, Utensils, Users, Bell, DollarSign, Compass, Film, Menu, X, MapPin, MessageSquare, Camera, BookOpen } from "lucide-react";
 
 export default function Header({ currentTab, setCurrentTab }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navItems = [
     { id: "home", label: "首頁", icon: Compass },
-    { id: "trip", label: "每日行程", icon: Bike },
-    { id: "route", label: "路線地圖", icon: MapPin },
-    { id: "reflections", label: "壯騎心得", icon: MessageSquare },
+    { id: "trip", label: "行程", icon: Bike },
+    { id: "route", label: "記錄", icon: BookOpen },
+    { id: "reflections", label: "感想", icon: MessageSquare },
     { id: "media", label: "影像紀錄", icon: Camera },
     { id: "food-lodging", label: "住宿餐食", icon: Utensils },
-    { id: "members", label: "成員名單", icon: Users },
+    { id: "members", label: "成員", icon: Users },
     { id: "review", label: "2025回顧", icon: Film },
     { id: "reminders", label: "重要提醒", icon: Bell },
     { id: "cost", label: "費用整理", icon: DollarSign },
@@ -33,10 +33,10 @@ export default function Header({ currentTab, setCurrentTab }) {
           </div>
           <div>
             <h1 className="text-base md:text-xl font-bold tracking-tight text-white m-0">
-              2026 剖地瓜壯騎行程手冊
+              熟齡剖地瓜壯騎
             </h1>
             <p className="text-[10px] text-slate-300 font-light mt-0.5 hidden md:block">
-              富貴角燈塔出發，鵝鑾鼻燈塔完成；八天七夜，橫越台灣山海
+              2026 富貴角燈塔至鵝鑾鼻燈塔壯騎紀錄
             </p>
           </div>
         </div>

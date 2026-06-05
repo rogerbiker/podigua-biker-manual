@@ -70,26 +70,7 @@ export default function TripOverview({ selectedDayId, setCurrentTab }) {
         </div>
       </div>
 
-      {/* 隨行手記宣傳 Banner */}
-      <div 
-        onClick={() => setCurrentTab("story-day1")}
-        className="mb-6 bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/25 rounded-2xl p-4 flex items-center justify-between cursor-pointer group transition-all duration-200"
-      >
-        <div className="flex items-center space-x-3.5 text-left">
-          <div className="bg-biker-orange text-white p-2.5 rounded-xl shadow-sm">
-            <FileText className="w-5 h-5" />
-          </div>
-          <div>
-            <h4 className="text-sm font-black text-slate-800 group-hover:text-biker-orange transition-colors">📖 2026 剖地瓜圖文隨行手記已上線！</h4>
-            <p className="text-xs text-slate-500 font-medium mt-0.5 leading-relaxed">
-              記錄每日壯騎的點滴挑戰與精彩故事，點擊即可閱讀 Day 1 「從富貴角到礁溪」的隨行手記。
-            </p>
-          </div>
-        </div>
-        <span className="text-xs font-black text-biker-orange flex items-center whitespace-nowrap ml-2">
-          立即閱讀 ➔
-        </span>
-      </div>
+
 
       {/* Trip Days Cards Stack */}
       <div className="space-y-4">

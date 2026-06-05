@@ -37,7 +37,7 @@ export default function Day1StoryPage({ setCurrentTab }) {
       {/* Intro Header Section */}
       <div className="max-w-2xl mx-auto px-4 mt-6 text-center space-y-2.5">
         <span className="inline-flex items-center space-x-1 bg-biker-navy text-white text-[9px] md:text-xs font-black uppercase tracking-widest px-2.5 py-1 rounded-md shadow-xs">
-          2026 剖地瓜壯騎 ｜ DAY 1 隨行手記
+          熟齡剖地瓜壯騎 ｜ DAY 1 隨行手記
         </span>
         <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight">
           Day 1｜從富貴角到礁溪
