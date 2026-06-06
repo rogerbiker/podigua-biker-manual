@@ -88,6 +88,7 @@ export default function MediaPage({ initialView = "all" }) {
   useEffect(() => {
     setVisiblePhotosCount(4);
     setPhotos([]);
+    setLoadingPhotos(true);
   }, [selectedDay]);
 
   // Progressive batch loading effect: load 4 more photos every 100ms
@@ -109,9 +110,7 @@ export default function MediaPage({ initialView = "all" }) {
       return;
     }
 
-    Promise.resolve().then(() => {
-      setLoadingPhotos(true);
-    });
+    setLoadingPhotos(true);
     const q = query(
       collection(db, "photos"),
       where("day", "==", selectedDay)
@@ -870,14 +869,10 @@ export default function MediaPage({ initialView = "all" }) {
             <span>Day {selectedDay} 壯騎照片牆</span>
           </h3>
 
-          {photos.length === 0 && loadingPhotos ? (
-            /* Render 8 pulsing skeleton placeholder cards immediately */
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {Array.from({ length: 8 }).map((_, idx) => (
-                <div key={idx} className="aspect-square rounded-2xl bg-slate-100 animate-pulse flex items-center justify-center text-slate-300">
-                  <Image className="w-8 h-8 opacity-45 animate-pulse" />
-                </div>
-              ))}
+          {loadingPhotos ? (
+            <div className="text-center py-12 text-xs text-slate-400">
+              <RefreshCw className="w-6 h-6 mx-auto mb-2 text-slate-300 animate-spin" />
+              <span>照片資料載入中，請稍候...</span>
             </div>
           ) : photos.length === 0 ? (
             <div className="bg-slate-50 rounded-2xl py-14 border border-dashed border-slate-200 text-center text-slate-400 text-xs font-semibold">

@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDLCWo0UCMsQPFecNZuILCAcv_B_A4HhWA",
@@ -13,5 +13,8 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore Database
-export const db = getFirestore(app);
+// Initialize Firestore Database with auto-detect long-polling to prevent WebSocket timeouts on mobile networks
+export const db = initializeFirestore(app, {
+  experimentalAutoDetectLongPolling: true
+});
+
