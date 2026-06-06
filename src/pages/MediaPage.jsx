@@ -82,19 +82,20 @@ export default function MediaPage({ initialView = "all" }) {
   const [isUploading, setIsUploading] = useState(false);
 
   // Progressive batch loading state
-  const [visiblePhotosCount, setVisiblePhotosCount] = useState(8);
+  const [visiblePhotosCount, setVisiblePhotosCount] = useState(4);
 
-  // Reset visible photos count when day changes
+  // Reset visible photos count and clear photos list when day changes to avoid showing old day's photos
   useEffect(() => {
-    setVisiblePhotosCount(8);
+    setVisiblePhotosCount(4);
+    setPhotos([]);
   }, [selectedDay]);
 
-  // Progressive batch loading effect: load 8 more photos every 150ms
+  // Progressive batch loading effect: load 4 more photos every 100ms
   useEffect(() => {
     if (initialView !== "videos" && photos.length > visiblePhotosCount) {
       const timer = setTimeout(() => {
-        setVisiblePhotosCount((prev) => Math.min(prev + 8, photos.length));
-      }, 150);
+        setVisiblePhotosCount((prev) => Math.min(prev + 4, photos.length));
+      }, 100);
       return () => clearTimeout(timer);
     }
   }, [photos.length, visiblePhotosCount, initialView]);
@@ -429,17 +430,22 @@ export default function MediaPage({ initialView = "all" }) {
     }
   };
 
-  // Direct download file from data URL
-  const handleDownload = async (url, photoId) => {
+  // Download photo using Vercel serverless function proxy to bypass cross-origin restrictions
+  const handleDownload = (url, photoId) => {
+    const filename = `biker-day-${selectedDay}-${photoId || Date.now()}.jpg`;
+    const downloadUrl = `/api/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`;
+    
     try {
       const link = document.createElement("a");
-      link.href = url;
-      link.download = `biker-day-${selectedDay}-${photoId || Date.now()}.jpg`;
+      link.href = downloadUrl;
+      link.download = filename;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     } catch (err) {
-      console.warn("Direct download failed, opening in new tab:", err);
+      console.warn("API download failed, falling back to direct link:", err);
       window.open(url, "_blank");
     }
   };
@@ -864,10 +870,14 @@ export default function MediaPage({ initialView = "all" }) {
             <span>Day {selectedDay} 壯騎照片牆</span>
           </h3>
 
-          {loadingPhotos ? (
-            <div className="text-center py-12 text-xs text-slate-400">
-              <RefreshCw className="w-6 h-6 mx-auto mb-2 text-slate-300 animate-spin" />
-              <span>照片載入中...</span>
+          {photos.length === 0 && loadingPhotos ? (
+            /* Render 8 pulsing skeleton placeholder cards immediately */
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {Array.from({ length: 8 }).map((_, idx) => (
+                <div key={idx} className="aspect-square rounded-2xl bg-slate-100 animate-pulse flex items-center justify-center text-slate-300">
+                  <Image className="w-8 h-8 opacity-45 animate-pulse" />
+                </div>
+              ))}
             </div>
           ) : photos.length === 0 ? (
             <div className="bg-slate-50 rounded-2xl py-14 border border-dashed border-slate-200 text-center text-slate-400 text-xs font-semibold">
@@ -879,18 +889,38 @@ export default function MediaPage({ initialView = "all" }) {
               {photos.slice(0, visiblePhotosCount).map((photo) => (
                 <div
                   key={photo.id}
-                  className="group relative aspect-square rounded-2xl overflow-hidden shadow-xs border border-slate-100 bg-slate-100 transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
+                  className="group relative aspect-square rounded-2xl overflow-hidden shadow-xs border border-slate-100 bg-slate-100 animate-pulse transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
                   onClick={() => setLightboxPhoto(photo)}
                 >
+                  {/* Pulsing loading placeholder icon */}
+                  <div className="placeholder-icon absolute inset-0 flex items-center justify-center text-slate-355 z-0">
+                    <Image className="w-6 h-6 opacity-45 animate-pulse" />
+                  </div>
+
                   <img
                     src={photo.url}
                     alt={`Day ${selectedDay} Biker Photo`}
                     loading="lazy"
-                    className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-103"
+                    className="absolute inset-0 w-full h-full object-cover object-center transition-all duration-500 opacity-0 group-hover:scale-103 z-10"
+                    onLoad={(e) => {
+                      e.target.classList.remove('opacity-0');
+                      e.target.classList.add('opacity-100');
+                      // Stop pulsing animation and change background
+                      const parent = e.target.parentElement;
+                      if (parent) {
+                        parent.classList.remove('bg-slate-100', 'animate-pulse');
+                        parent.classList.add('bg-slate-50');
+                        // Find placeholder icon and hide it
+                        const placeholder = parent.querySelector('.placeholder-icon');
+                        if (placeholder) {
+                          placeholder.style.display = 'none';
+                        }
+                      }
+                    }}
                   />
 
                   {/* Desktop overlay options on hover */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-between p-2.5">
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-between p-2.5 z-20">
                     {/* Top action row */}
                     <div className="flex justify-end space-x-1.5">
                       {isPasswordVerified && (
@@ -935,7 +965,7 @@ export default function MediaPage({ initialView = "all" }) {
                     <button
                       type="button"
                       onClick={(e) => handleDeletePhoto(photo, e)}
-                      className="md:hidden absolute top-2 right-2 bg-red-600/90 text-white p-2 rounded-xl shadow-md pointer-events-auto z-10"
+                      className="md:hidden absolute top-2 right-2 bg-red-600/90 text-white p-2 rounded-xl shadow-md pointer-events-auto z-20"
                       title="刪除照片"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -943,7 +973,7 @@ export default function MediaPage({ initialView = "all" }) {
                   )}
 
                   {/* Day Tag (Bottom Left) */}
-                  <div className="md:hidden absolute bottom-2 left-2 bg-slate-900/70 text-white px-2 py-0.5 rounded-lg font-bold text-[9px] pointer-events-none">
+                  <div className="md:hidden absolute bottom-2 left-2 bg-slate-900/70 text-white px-2 py-0.5 rounded-lg font-bold text-[9px] pointer-events-none z-20">
                     Day {selectedDay}
                   </div>
 
@@ -954,7 +984,7 @@ export default function MediaPage({ initialView = "all" }) {
                       e.stopPropagation();
                       handleDownload(photo.url, photo.id);
                     }}
-                    className="md:hidden absolute bottom-2 right-2 bg-biker-orange/90 text-white p-2 rounded-xl shadow-md pointer-events-auto z-10"
+                    className="md:hidden absolute bottom-2 right-2 bg-biker-orange/90 text-white p-2 rounded-xl shadow-md pointer-events-auto z-20"
                     title="下載照片"
                   >
                     <Download className="w-4 h-4" />
@@ -1062,26 +1092,34 @@ export default function MediaPage({ initialView = "all" }) {
             </div>
 
             {/* Lightbox actions panel */}
-            <div className="w-full flex items-center justify-between mt-4 px-2">
-              <span className="text-xs text-white/60 font-bold bg-white/5 px-3 py-1 rounded-lg">
-                📆 Day {selectedDay} 壯騎照片
-              </span>
-              <div className="flex space-x-2">
-                <button
-                  type="button"
-                  onClick={() => handleDownload(lightboxPhoto.url, lightboxPhoto.id)}
-                  className="bg-biker-orange hover:bg-biker-orange-dark text-white font-bold py-2 px-4 rounded-xl text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center space-x-1.5"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>下載此照片</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLightboxPhoto(null)}
-                  className="bg-white/10 hover:bg-white/20 text-white font-bold py-2 px-4 rounded-xl text-xs transition-all active:scale-95 cursor-pointer"
-                >
-                  關閉
-                </button>
+            <div className="w-full flex flex-col space-y-3 mt-4 px-2">
+              <div className="w-full flex items-center justify-between">
+                <span className="text-xs text-white/60 font-bold bg-white/5 px-3 py-1 rounded-lg">
+                  📆 Day {selectedDay} 壯騎照片
+                </span>
+                <div className="flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => handleDownload(lightboxPhoto.url, lightboxPhoto.id)}
+                    className="bg-biker-orange hover:bg-biker-orange-dark text-white font-bold py-2 px-4 rounded-xl text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center space-x-1.5 animate-pulse"
+                    style={{ animationDuration: '2s' }}
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>下載此照片</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLightboxPhoto(null)}
+                    className="bg-white/10 hover:bg-white/20 text-white font-bold py-2 px-4 rounded-xl text-xs transition-all active:scale-95 cursor-pointer"
+                  >
+                    關閉
+                  </button>
+                </div>
+              </div>
+              
+              {/* Mobile download helper note */}
+              <div className="text-center text-[10px] text-slate-300 bg-white/5 py-2.5 px-3 rounded-xl border border-white/5 leading-relaxed">
+                💡 手機與 LINE 貼心提醒：若按下載鍵無反應，您可以直接「長按上方大圖」並點選「儲存影像」以存入手機相簿喔！
               </div>
             </div>
           </div>
