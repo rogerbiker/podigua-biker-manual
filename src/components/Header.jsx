@@ -45,7 +45,7 @@ export default function Header({ currentTab, setCurrentTab }) {
         <nav className="hidden md:flex space-x-1">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = currentTab === item.id;
+            const isActive = currentTab === item.id || (item.id === "media" && currentTab.startsWith("media"));
             return (
               <button
                 key={item.id}
@@ -78,7 +78,7 @@ export default function Header({ currentTab, setCurrentTab }) {
           <div className="grid grid-cols-2 gap-2">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = currentTab === item.id;
+              const isActive = currentTab === item.id || (item.id === "media" && currentTab.startsWith("media"));
               return (
                 <button
                   key={item.id}

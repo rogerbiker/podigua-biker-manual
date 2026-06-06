@@ -28,7 +28,7 @@ import {
   Settings
 } from "lucide-react";
 
-export default function MediaPage() {
+export default function MediaPage({ initialView = "all" }) {
   const [selectedDay, setSelectedDay] = useState(1);
   const days = [1, 2, 3, 4, 5, 6, 7, 8];
 
@@ -81,8 +81,33 @@ export default function MediaPage() {
   const [currentUploadingIndex, setCurrentUploadingIndex] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Progressive batch loading state
+  const [visiblePhotosCount, setVisiblePhotosCount] = useState(8);
+
+  // Reset visible photos count when day changes
+  useEffect(() => {
+    setVisiblePhotosCount(8);
+  }, [selectedDay]);
+
+  // Progressive batch loading effect: load 8 more photos every 150ms
+  useEffect(() => {
+    if (initialView !== "videos" && photos.length > visiblePhotosCount) {
+      const timer = setTimeout(() => {
+        setVisiblePhotosCount((prev) => Math.min(prev + 8, photos.length));
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [photos.length, visiblePhotosCount, initialView]);
+
   // Live database updates
   useEffect(() => {
+    // If in videos-only mode, bypass loading photos entirely
+    if (initialView === "videos") {
+      setPhotos([]);
+      setLoadingPhotos(false);
+      return;
+    }
+
     Promise.resolve().then(() => {
       setLoadingPhotos(true);
     });
@@ -109,9 +134,16 @@ export default function MediaPage() {
     });
 
     return () => unsubscribe();
-  }, [selectedDay]);
+  }, [selectedDay, initialView]);
 
   useEffect(() => {
+    // If in photos-only mode, bypass loading videos entirely
+    if (initialView === "photos") {
+      setVideo(null);
+      setLoadingVideo(false);
+      return;
+    }
+
     Promise.resolve().then(() => {
       setLoadingVideo(true);
     });
@@ -129,7 +161,7 @@ export default function MediaPage() {
     });
 
     return () => unsubscribe();
-  }, [selectedDay]);
+  }, [selectedDay, initialView]);
 
   // Pre-populate videoUrlInput when Day changes or video document updates
   useEffect(() => {
@@ -555,7 +587,8 @@ export default function MediaPage() {
       <div className="space-y-6">
         
         {/* SECTION 1: Daily Video Player */}
-        <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm space-y-4">
+        {initialView !== "photos" && (
+          <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm space-y-4 animate-fade-in">
           <h3 className="text-sm font-black text-slate-800 flex items-center space-x-2 border-b border-slate-50 pb-2">
             <span className="bg-orange-100 text-biker-orange p-1 rounded-lg">🎥</span>
             <span>Day {selectedDay} 每日精選短影片</span>
@@ -821,9 +854,11 @@ export default function MediaPage() {
             </div>
           )}
         </div>
+        )}
 
         {/* SECTION 2: Photo Wall Grid */}
-        <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm space-y-4">
+        {initialView !== "videos" && (
+          <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm space-y-4 animate-fade-in">
           <h3 className="text-sm font-black text-slate-800 flex items-center space-x-2 border-b border-slate-50 pb-2">
             <span className="bg-green-100 text-biker-green p-1 rounded-lg">🖼️</span>
             <span>Day {selectedDay} 壯騎照片牆</span>
@@ -841,7 +876,7 @@ export default function MediaPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {photos.map((photo) => (
+              {photos.slice(0, visiblePhotosCount).map((photo) => (
                 <div
                   key={photo.id}
                   className="group relative aspect-square rounded-2xl overflow-hidden shadow-xs border border-slate-100 bg-slate-100 transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
@@ -929,6 +964,7 @@ export default function MediaPage() {
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Video Confirmation Intermediate Modal (Roger UX design) */}

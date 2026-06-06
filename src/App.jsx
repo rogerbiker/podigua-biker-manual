@@ -65,7 +65,11 @@ export default function App() {
       case "reflections":
         return <ReflectionPage />;
       case "media":
-        return <MediaPage />;
+        return <MediaPage initialView="all" />;
+      case "media-photos":
+        return <MediaPage initialView="photos" />;
+      case "media-videos":
+        return <MediaPage initialView="videos" />;
       case "story-day1":
         return <Day1StoryPage setCurrentTab={setCurrentTab} />;
       case "story-day1-pdf":
