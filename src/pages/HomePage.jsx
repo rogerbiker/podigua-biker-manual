@@ -1,4 +1,5 @@
-import { Calendar, MapPin, Navigation, Compass, Shield, Award, ChevronRight, BarChart2, Film, MessageSquare, Camera, BookOpen } from "lucide-react";
+import { Calendar, MapPin, Navigation, Compass, Shield, Award, ChevronRight, BarChart2, MessageSquare, Camera, BookOpen } from "lucide-react";
+import FeatureEntryCard from "../components/FeatureEntryCard";
 
 export default function HomePage({ setCurrentTab }) {
   const stats = [
@@ -13,6 +14,47 @@ export default function HomePage({ setCurrentTab }) {
 
   const fuguijiaoImg = `${import.meta.env.BASE_URL}images/hero/fuguijiao-start.webp`;
   const eluanbiImg = `${import.meta.env.BASE_URL}images/hero/eluanbi-finish.webp`;
+  const quickEntries = [
+    {
+      id: "story",
+      title: "壯騎故事｜每日圖文手記",
+      description: "閱讀 Day1 到 Day8 的每日圖文故事，重溫山海挑戰與團隊記憶。",
+      buttonText: "閱讀故事",
+      icon: BookOpen,
+      onClick: () => setCurrentTab("story-day1"),
+      background: "linear-gradient(135deg, #F8D77A 0%, #FCE9B5 100%)",
+      borderColor: "#E7B93E",
+      shadowColor: "rgba(180, 125, 15, 0.22)",
+      iconBg: "bg-white/80 text-amber-700 border border-amber-300",
+      btnClass: "bg-white/90 hover:bg-amber-600 border border-amber-300 text-slate-700 group-hover:text-white group-hover:border-amber-600",
+    },
+    {
+      id: "reflections",
+      title: "感想紀錄｜留下你的文字感想",
+      description: "記錄自己的騎乘感受、挑戰片段與難忘時刻。",
+      buttonText: "開始記錄",
+      icon: MessageSquare,
+      onClick: () => setCurrentTab("reflections"),
+      background: "linear-gradient(135deg, #B7D2F4 0%, #D7E3F8 100%)",
+      borderColor: "#6D9DDB",
+      shadowColor: "rgba(45, 101, 180, 0.20)",
+      iconBg: "bg-white/80 text-blue-700 border border-blue-300",
+      btnClass: "bg-white/90 hover:bg-blue-600 border border-blue-300 text-slate-700 group-hover:text-white group-hover:border-blue-600",
+    },
+    {
+      id: "media",
+      title: "影像紀錄｜照片與短影片",
+      description: "瀏覽每日精彩照片與短影片，重回壯騎現場。",
+      buttonText: "瀏覽影像",
+      icon: Camera,
+      onClick: () => setCurrentTab("media"),
+      background: "linear-gradient(135deg, #A9E2CE 0%, #D1F2E7 100%)",
+      borderColor: "#54B997",
+      shadowColor: "rgba(22, 133, 98, 0.20)",
+      iconBg: "bg-white/80 text-emerald-700 border border-emerald-300",
+      btnClass: "bg-white/90 hover:bg-emerald-600 border border-emerald-300 text-slate-700 group-hover:text-white group-hover:border-emerald-600",
+    },
+  ];
 
   return (
     <div className="fade-in w-full">
@@ -99,67 +141,11 @@ export default function HomePage({ setCurrentTab }) {
         </button>
       </div>
 
-      {/* 2026 互動與紀錄快捷入口 (三欄 Grid，手機版自動直欄) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        {/* 隨行手記 Banner */}
-        <div 
-          onClick={() => setCurrentTab("story-day1")}
-          className="bg-gradient-to-br from-amber-500/10 to-orange-500/15 border border-amber-200/50 hover:border-amber-300/80 hover:shadow-md hover:-translate-y-0.5 rounded-2xl p-5 md:p-6 transition-all duration-300 flex justify-between items-center gap-4 text-left cursor-pointer group"
-        >
-          <div className="flex-1 min-w-0 pr-2">
-            <h4 className="text-sm sm:text-base font-black text-slate-800 leading-tight">
-              壯騎故事｜每日圖文手記
-            </h4>
-            <p className="text-xs text-slate-500 font-medium mt-2 leading-relaxed">
-              閱讀 Day1 到 Day8 的每日圖文故事，重溫山海挑戰與團隊記憶。
-            </p>
-          </div>
-          <div className="flex-shrink-0">
-            <span className="inline-flex items-center justify-center bg-amber-600 group-hover:bg-amber-700 text-white font-black py-2 px-3.5 rounded-xl text-xs shadow-xs transition-all active:scale-95 whitespace-nowrap">
-              閱讀故事
-            </span>
-          </div>
-        </div>
-
-        {/* 感想紀錄 Banner */}
-        <div 
-          onClick={() => setCurrentTab("reflections")}
-          className="bg-gradient-to-br from-blue-500/10 to-indigo-500/15 border border-blue-200/50 hover:border-blue-300/80 hover:shadow-md hover:-translate-y-0.5 rounded-2xl p-5 md:p-6 transition-all duration-300 flex justify-between items-center gap-4 text-left cursor-pointer group"
-        >
-          <div className="flex-1 min-w-0 pr-2">
-            <h4 className="text-sm sm:text-base font-black text-slate-800 leading-tight">
-              感想紀錄｜留下你的文字感想
-            </h4>
-            <p className="text-xs text-slate-500 font-medium mt-2 leading-relaxed">
-              記錄自己的騎乘感受、挑戰片段與難忘時刻。
-            </p>
-          </div>
-          <div className="flex-shrink-0">
-            <span className="inline-flex items-center justify-center bg-biker-navy-light group-hover:bg-blue-600 text-white font-black py-2 px-3.5 rounded-xl text-xs shadow-xs transition-all active:scale-95 whitespace-nowrap">
-              開始記錄
-            </span>
-          </div>
-        </div>
-
-        {/* 影像紀錄 Banner */}
-        <div 
-          onClick={() => setCurrentTab("media")}
-          className="bg-gradient-to-br from-emerald-500/10 to-teal-500/15 border border-emerald-200/50 hover:border-emerald-300/80 hover:shadow-md hover:-translate-y-0.5 rounded-2xl p-5 md:p-6 transition-all duration-300 flex justify-between items-center gap-4 text-left cursor-pointer group"
-        >
-          <div className="flex-1 min-w-0 pr-2">
-            <h4 className="text-sm sm:text-base font-black text-slate-800 leading-tight">
-              影像紀錄｜照片與短影片
-            </h4>
-            <p className="text-xs text-slate-500 font-medium mt-2 leading-relaxed">
-              瀏覽每日精彩照片與短影片，重回壯騎現場。
-            </p>
-          </div>
-          <div className="flex-shrink-0">
-            <span className="inline-flex items-center justify-center bg-biker-green group-hover:bg-green-700 text-white font-black py-2 px-3.5 rounded-xl text-xs shadow-xs transition-all active:scale-95 whitespace-nowrap">
-              瀏覽影像
-            </span>
-          </div>
-        </div>
+      {/* 2026 互動與紀錄快捷入口 */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
+        {quickEntries.map((item) => (
+          <FeatureEntryCard key={item.id} item={item} />
+        ))}
       </div>
 
       {/* 2025 歷史傳承與回顧 (已調輕量化，作為傳承區塊，已提升至行程統計資訊上方) */}
