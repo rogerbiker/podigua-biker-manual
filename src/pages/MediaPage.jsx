@@ -32,6 +32,20 @@ export default function MediaPage({ initialView = "all" }) {
   const [selectedDay, setSelectedDay] = useState(1);
   const days = [1, 2, 3, 4, 5, 6, 7, 8];
 
+  // Helper to convert original url into a lightweight webp thumbnail using weserv.nl proxy
+  const getThumbnailUrl = (url) => {
+    if (!url) return "";
+    return `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=400&q=80&output=webp`;
+  };
+
+  // Error fallback in case the image proxy fails
+  const handleImageError = (e, originalUrl) => {
+    if (e.target.src !== originalUrl) {
+      console.warn("Thumbnail proxy failed, falling back to original Firebase URL.");
+      e.target.src = originalUrl;
+    }
+  };
+
   // Admin Mode detection
   const [isAdminMode, setIsAdminMode] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -893,10 +907,11 @@ export default function MediaPage({ initialView = "all" }) {
                   </div>
 
                   <img
-                    src={photo.url}
+                    src={getThumbnailUrl(photo.url)}
                     alt={`Day ${selectedDay} Biker Photo`}
                     loading="lazy"
                     className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-103 z-10 opacity-0"
+                    onError={(e) => handleImageError(e, photo.url)}
                     onLoad={(e) => {
                       e.target.classList.remove('opacity-0');
                       e.target.classList.add('animate-image-fade-in');
