@@ -91,12 +91,12 @@ export default function MediaPage({ initialView = "all" }) {
     setLoadingPhotos(true);
   }, [selectedDay]);
 
-  // Progressive batch loading effect: load 4 more photos every 100ms
+  // Progressive batch loading effect: load 4 more photos every 1200ms to pace network requests on mobile
   useEffect(() => {
     if (initialView !== "videos" && photos.length > visiblePhotosCount) {
       const timer = setTimeout(() => {
         setVisiblePhotosCount((prev) => Math.min(prev + 4, photos.length));
-      }, 100);
+      }, 1200);
       return () => clearTimeout(timer);
     }
   }, [photos.length, visiblePhotosCount, initialView]);
@@ -896,10 +896,10 @@ export default function MediaPage({ initialView = "all" }) {
                     src={photo.url}
                     alt={`Day ${selectedDay} Biker Photo`}
                     loading="lazy"
-                    className="absolute inset-0 w-full h-full object-cover object-center transition-all duration-500 opacity-0 group-hover:scale-103 z-10"
+                    className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-103 z-10 opacity-0"
                     onLoad={(e) => {
                       e.target.classList.remove('opacity-0');
-                      e.target.classList.add('opacity-100');
+                      e.target.classList.add('animate-image-fade-in');
                       // Stop pulsing animation and change background
                       const parent = e.target.parentElement;
                       if (parent) {
