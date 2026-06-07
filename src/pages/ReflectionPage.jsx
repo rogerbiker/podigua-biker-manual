@@ -3,11 +3,12 @@ import { db } from "../lib/firebase";
 import { collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "firebase/firestore";
 import { specialQuestionsByDay } from "../data/specialQuestions";
 import { riderProfiles } from "../data/riderProfiles";
+import { certificates } from "../data/certificateData";
 import { dailyRoutes } from "../data/dailyRoutes";
 import { 
   Send, CheckCircle2, CloudLightning, Database, Calendar, Users, 
   Clock, HelpCircle, RefreshCw, Lock, Settings, AlertTriangle, 
-  Trash2, Clipboard, FileText, Check, Upload 
+  Trash2, Clipboard, FileText, Check, Upload, Award
 } from "lucide-react";
 
 // List of all members in the handbook
@@ -192,6 +193,268 @@ const generateSimulatorClosingQuestion = (profile, userText, day) => {
   }
   
   return `${prefix}聽您分享這段細節真的非常有故事性。在幫您整理成完整手記前，我再與您確認一下：這件事最後是怎麼收尾的？當時您心裡最強烈的感覺是什麼？`;
+};
+
+// === 完騎感言模式相關的 System Instructions & 模擬器輔助代碼 ===
+
+// System instruction for certificate reflection follow-up question generation (dynamic behavior)
+const getSystemInstructionForCertificateReflectionFollowUp = (profile, messageCount) => {
+  return `你是一位懂車隊、溫慢且傾聽的「單車壯騎完騎感言秘書」阿呆。
+目前正在陪伴剖地瓜車隊的成員「${profile.displayName}」進行對話，引導他回顧這整趟「2026 熟齡剖地瓜壯騎」並整理出個人完騎感言。
+這是他騎完全程、取得完騎證書後的感言對話。
+
+【成員人設背景資訊】
+- 稱呼：${profile.displayName}${profile.honorific}
+- 角色：${profile.role}
+- 語氣特點：${profile.tone}
+- 本次壯騎對他的特別意義：${profile.specialMeaning}
+- ⚠️ 應避免的事項與紅線（絕對不能踩）：${profile.avoid}
+
+【你的對話任務與規則】
+1. 你正在與成員進行溫馨的交談，請以語氣親近、有默契的方式對話，像老隊友或溫馨的小秘書。這不是問卷，而是「交談式陪伴」。
+2. 第一題已經發問（「回顧這次 2026 熟齡剖地瓜壯騎，你現在最想留下的一句話或一段感受是什麼？」），成員剛才給出了第一輪回答。
+3. 這是第 \${messageCount} 輪回答。
+   - 【若是第 1 次回答後（即你現在要提問第 2 題）】：
+     請仔細分析成員的回答，並根據他的回答偏向進行【一個溫和自然且精準的追問問題】：
+     * 若回答偏辛苦（提及累、酸、撐、坡度等挑戰），追問他是如何撐過挑戰，在快要放棄或最痛苦的片刻是想到什麼或誰給了他力量。
+     * 若回答偏感謝（提及隊友、支援車、大家、照應等），追問團隊互相照應、革命情感的感受，或有沒有哪個具體互動或某個隊友的小動作讓他特別感動。
+     * 若回答偏開心（提及歡樂、聚餐、喝酒、歌聲等），追問最值得記住的快樂、笑聲，或是路上哪個最開懷好玩的片刻。
+     * 若回答偏完成感/成就感（提及完騎、終於、證書等），追問這張「完騎證書」對他的意義，以及想對堅持到底完成挑戰的自己說些什麼。
+     * 若回答偏平淡或簡短，請用老朋友般的溫柔語調，引導他回想起這 8 天路上最有印象的一個感受、畫面或瞬間。
+   - 【若是第 2 次回答後（即你現在要判斷是否提問第 3 題）】：
+     * 如果成員的第二次回答已經非常有內容、有畫面感或感情豐富，請「直接溫和收尾」，大約 1~2 句話肯定他，並告訴他記錄已經很完整，可以點擊下方的「幫我整理感言」按鈕。不要再提問任何新問題！
+     * 如果成員的第二次回答依然非常簡短（低於 15 字）或過於抽象，請進行「最後一次溫和的追問」（第 3 題），例如用極其輕柔的語氣問他：有沒有哪個特定的隊友、或是路上的某個風景畫面，是浮現在他腦海裡的？
+   - 【若是第 3 次回答後（即你現在要收尾）】：
+     * 請絕對不要再問任何新問題！直接做一個 1~2 句話的溫馨收尾，肯定他的分享，並提示他可以點擊下方的「幫我整理感言」按鈕。
+4. 語氣請始終保持溫柔、體貼、有默契，絕不生硬照本宣科，也不要過度煽情。
+5. ⚠️ 人名修正與限制：本專案成員中包含名為「PP Medicine」（displayName 為 "PP Medicine"）的成員，在對談中一律使用『PP Medicine 大哥』稱呼他。
+6. 請直接輸出你要對成員說的話，不要包含任何旁白、系統提示或 markdown 格式標籤。`;
+};
+
+// System instruction for polishing the final certificate reflection into reflectionShort and reflectionFull
+const getSystemInstructionForCertificateReflectionPolish = (profile) => {
+  return `你是一位專門幫剖地瓜車隊隊友整理對話並撰寫完騎感言的「壯騎心得編輯夥伴」阿呆。
+成員「${profile.displayName}」完成了「2026 熟齡剖地瓜壯騎」大挑戰，並與你完成了一段關於完騎感言的對話。
+
+【成員人設背景資訊】
+- 稱呼：${profile.displayName}${profile.honorific}
+- 角色：${profile.role}
+- 語氣特點：${profile.tone}
+- 本次壯騎的特別意義：${profile.specialMeaning}
+- ⚠️ 應避免的事項：${profile.avoid}
+
+【你的編輯任務與規則】
+1. 請仔細閱讀後續提供的「對話歷史紀錄」。
+2. 將成員在對話中零散、口語、隨興的回答，整理成一段第一人稱（以「我」的視角）的完騎感言。
+3. 語氣與文風必須完全符合該成員的「語氣特點」與「角色」背景，讓其他人讀起來就像是該隊友親自寫下的回顧，具有一點靈魂感。
+4. ⚠️ 整理原則：
+   - 保留隊友自己的語氣，不要寫得像官方新聞稿。
+   - 不要過度華麗，也不要太煽情。
+   - 文字要自然、溫暖、有重點。
+   - 可以幫忙修順口語、補足邏輯，但不要把內容改到不像本人。
+5. ⚠️ 你必須同時產出兩個版本的完騎感言，其字數規格如下：
+   - 【短版感言 (reflectionShort)】：字數嚴格限制在 100 - 160 字之間。這段文字是要放在完騎證書卡片下方的，必須極度精煉、溫馨有重點。
+   - 【完整版感言 (reflectionFull)】：字數限制在 200 - 350 字之間。這段文字保留較完整、有細節與脈絡的整理，供未來展開閱讀使用。
+6. ⚠️ 輸出格式與容錯：
+   請同時以 JSON 格式和段落標籤格式回傳，確保程序解析不會卡死。你的輸出必須嚴格包含以下結構，不要有任何 Markdown 包裝（如 \`\`\`json）：
+   {
+     "reflectionShort": "短版感言內容...",
+     "reflectionFull": "完整版感言內容..."
+   }
+
+   同時在 JSON 的後方或下方，再附帶標籤格式作為備用解析防線：
+   [SHORT]
+   短版感言內容...
+   [/SHORT]
+   [FULL]
+   完整版感言內容...
+   [/FULL]
+   
+   請直接輸出，不要包含任何「好的，以下是整理的內容：」等開頭或結尾廢話！`;
+};
+
+// Robust Parser to extract reflectionShort and reflectionFull with multi-layered fallbacks
+const parseCertificateReflection = (rawText) => {
+  let reflectionShort = "";
+  let reflectionFull = "";
+  
+  if (!rawText) return { reflectionShort, reflectionFull };
+  
+  const cleanText = rawText.trim();
+  
+  // 1. 嘗試 JSON Parse 容錯（先清理可能的 Markdown 標記，例如 ```json 和 ```）
+  try {
+    let jsonStr = cleanText;
+    if (jsonStr.includes("```")) {
+      const match = jsonStr.match(/```(?:json)?([\s\S]*?)```/);
+      if (match && match[1]) {
+        jsonStr = match[1].trim();
+      }
+    }
+    const braceMatch = jsonStr.match(/\{[\s\S]*\}/);
+    if (braceMatch) {
+      jsonStr = braceMatch[0];
+    }
+    
+    const parsed = JSON.parse(jsonStr);
+    if (parsed.reflectionShort && parsed.reflectionFull) {
+      return {
+        reflectionShort: parsed.reflectionShort.trim(),
+        reflectionFull: parsed.reflectionFull.trim()
+      };
+    }
+  } catch (e) {
+    console.warn("JSON parsing failed, attempting tag-based parsing...", e);
+  }
+  
+  // 2. 嘗試用 [SHORT]...[/SHORT] 與 [FULL]...[/FULL] 正規標籤解析
+  try {
+    const shortMatch = cleanText.match(/\[SHORT\]([\s\S]*?)\[\/SHORT\]/i);
+    const fullMatch = cleanText.match(/\[FULL\]([\s\S]*?)\[\/FULL\]/i);
+    
+    if (shortMatch && shortMatch[1]) {
+      reflectionShort = shortMatch[1].trim();
+    }
+    if (fullMatch && fullMatch[1]) {
+      reflectionFull = fullMatch[1].trim();
+    }
+    
+    if (reflectionShort && reflectionFull) {
+      return { reflectionShort, reflectionFull };
+    }
+  } catch (e) {
+    console.warn("Tag-based parsing failed, attempting keyword split...", e);
+  }
+  
+  // 3. 嘗試用中文關鍵字拆分（例如「短版：」、「完整版：」）
+  try {
+    const hasShort = /短版[：:]/i.test(cleanText);
+    const hasFull = /完整版[：:]/i.test(cleanText);
+    
+    if (hasShort && hasFull) {
+      const shortIdx = cleanText.search(/短版[：:]/i);
+      const fullIdx = cleanText.search(/完整版[：:]/i);
+      
+      if (shortIdx < fullIdx) {
+        reflectionShort = cleanText.substring(shortIdx + 3, fullIdx).trim();
+        reflectionFull = cleanText.substring(fullIdx + 4).trim();
+      } else {
+        reflectionFull = cleanText.substring(fullIdx + 4, shortIdx).trim();
+        reflectionShort = cleanText.substring(shortIdx + 3).trim();
+      }
+      
+      reflectionShort = reflectionShort.replace(/\[\/?SHORT\]/gi, "").trim();
+      reflectionFull = reflectionFull.replace(/\[\/?FULL\]/gi, "").trim();
+      
+      if (reflectionShort && reflectionFull) {
+        return { reflectionShort, reflectionFull };
+      }
+    }
+  } catch (e) {
+    console.warn("Keyword split parsing failed, using fallback...", e);
+  }
+  
+  // 4. 極限退路：將整段文字當作 reflectionFull，並截取一部分作為 reflectionShort
+  const fallbackFull = cleanText
+    .replace(/\[\/?SHORT\]/gi, "")
+    .replace(/\[\/?FULL\]/gi, "")
+    .replace(/\{[\s\S]*\}/, "") 
+    .trim();
+    
+  reflectionFull = fallbackFull;
+  
+  if (fallbackFull.length > 130) {
+    const truncateIdx = fallbackFull.indexOf("。", 100);
+    if (truncateIdx !== -1 && truncateIdx < 160) {
+      reflectionShort = fallbackFull.substring(0, truncateIdx + 1);
+    } else {
+      reflectionShort = fallbackFull.substring(0, 130) + "...";
+    }
+  } else {
+    reflectionShort = fallbackFull;
+  }
+  
+  return { reflectionShort, reflectionFull };
+};
+
+// Local Smart Simulator follow-up response for certificate reflection mode
+const generateCertificateReflectionSimulatorFollowUp = (profile, userText, history) => {
+  const name = profile.displayName;
+  const honorific = profile.honorific || "大哥/姐";
+  const prefix = `\${name}\${honorific}，`;
+  const userMessageCount = history.filter(m => m.role === 'user' && !checkCriticism(m.text)).length;
+  
+  if (userMessageCount === 1) {
+    const text = userText.toLowerCase();
+    if (text.includes("累") || text.includes("酸") || text.includes("辛苦") || text.includes("坡") || text.includes("挑戰") || text.includes("撐")) {
+      return `\${prefix}聽得出來這趟縱貫台灣的挑戰在體能與意志力上真的非常吃緊，尤其是那些爬坡路段。回想起那段您覺得最累、甚至想著放棄的片刻，當時是憑著什麼信念，或者是哪位隊友的一句加油，讓您咬緊牙關繼續踩下去的？`;
+    }
+    if (text.includes("謝") || text.includes("感激") || text.includes("隊友") || text.includes("團隊") || text.includes("大家")) {
+      return `\${prefix}這就是我們剖地瓜最珍貴的革命情感！大家在路上互相破風、互相打氣，真的讓人充滿力氣。回想這 8 天的朝夕相處，有沒有哪一個隊友互助的畫面，是您覺得最溫馨、現在想起來仍會暖心的？`;
+    }
+    if (text.includes("開心") || text.includes("快樂") || text.includes("好玩") || text.includes("笑") || text.includes("歌") || text.includes("啤酒")) {
+      return `\${prefix}哈哈！騎完車大家坐在一起開瓶啤酒、隨性開玩笑，真的是洗去整天疲憊的最佳良藥！在這段壯騎的旅程中，有沒有哪一個好玩、好笑，或是讓您覺得最快樂的瞬間？`;
+    }
+    if (text.includes("證書") || text.includes("完成") || text.includes("完騎") || text.includes("驕傲")) {
+      return `\${prefix}這張完騎證書真的實至名歸，見證了您踩過風雨和山嶺的堅持！對您而言，這張證書象徵著什麼樣的成就？回頭看看第一天出發的自己，此時您最想對自己說些什麼？`;
+    }
+    return `\${prefix}回想起這 8 天的縱貫挑戰，真的經歷了好多好多。如果此時請您回想，最先浮現在您腦海裡的是哪一個畫面、風景，或是與誰在一起的深刻片刻？`;
+  }
+  
+  if (userMessageCount === 2) {
+    if (userText.length < 10) {
+      return `\${prefix}這段感受雖然簡短，但聽得出來非常有感觸。能不能再為我多分享一個畫面或細節？例如當時身旁有誰，或者當時路上的風景是怎樣的？這會讓我們稍後的感言更有故事喔！`;
+    }
+    return `\${prefix}您分享的心境真的很棒，充滿了靈魂與情感。這些回憶我們都已經收錄了，請點擊下方的「幫我整理完騎感言」按鈕，我會為您整理出短版與完整版的感言手記！`;
+  }
+  
+  return `\${prefix}太棒了，有這些細節，我們的回顧就非常生動且完整了。請點擊下方的「幫我整理完騎感言」按鈕，我這就為您生成專屬的一長一短感言！`;
+};
+
+// Local Smart Simulator polish compiler for certificate reflection mode
+const generateCertificateReflectionSimulatorPolish = (profile, chatHistory) => {
+  const userAnswers = chatHistory
+    .filter(msg => msg.role === 'user')
+    .map(msg => msg.text);
+  
+  const ans1 = userAnswers[0] || "";
+  const ans2 = userAnswers[1] || "";
+  const ans3 = userAnswers[2] || "";
+  
+  let reflectionShort = "";
+  let reflectionFull = "";
+  
+  switch(profile.id) {
+    case "roger":
+      reflectionShort = "這是一趟考驗意志力的壯行。身為媒體組長與騎士，能和 Sally 攜手參與並記錄大家奮戰的畫面，是我最大的榮幸。這張證書是我們共同的革命情感。";
+      reflectionFull = "回顧這次 2026 熟齡剖地瓜壯騎，這是一趟考驗意志力與體能極限的挑戰。我最想留下的話是：這份完騎證書是我們每個人一生的榮耀與回憶！在過程中，我不僅要專注於自己的踩踏，更作為媒體組長負責影像紀錄與每日短影片製作，努力用鏡頭捕捉大夥的每一份堅持。對我來說，最珍貴的是能與夫人 Sally 攜手前行，並在風雨中體會到扶輪社友間無價的默契與革命情感。這些數位回憶，將永遠烙印在我們心中。";
+      break;
+    case "sally":
+      reflectionShort = "第一次參加剖地瓜，過程雖然辛苦，但能跟 Roger 及隊友並肩作戰、跟上山神的節奏，讓我看見了自己的堅強。順利完騎，真的很棒！";
+      reflectionFull = "這是我第一次參加剖地瓜壯騎，對我而言是一場全新的新鮮體驗與挑戰。一路上，我一直努力調整呼吸與節奏，緊跟在領騎山神的後面。過程雖然疲累，但有先生 Roger 的陪伴，以及全體隊友的鼓勵，給了我克服挑戰的無比勇氣。這次完騎證明了只要堅持，自己比想像中更堅強。這張證書是我生命中非常珍貴的勳章！";
+      break;
+    case "pp-pure":
+      reflectionShort = "以 80 歲的高齡完成縱貫台灣，靠的是大家一路的照應與加油。能與這群好朋友共享這份榮耀，是我人生最大的快樂與不老證明！";
+      reflectionFull = "回顧這次 2026 熟齡剖地瓜壯騎，我最想留下的一句話是：堅持到底，永不服老！以八十歲的年紀再次挑戰自我，老實說體力上確實很吃緊。但是一路上有著 Volvo 團長與眾多好社友的不斷關心與陪伴破風，讓我能安穩完成每一步。這張證書對我而言不只是一張紙，更是大家溫慢且堅定支持的成果，也是我不老生命力的最佳證明。";
+      break;
+    default:
+      reflectionShort = "完成了 8 天縱貫台灣的挑戰，這張證書代表著我們的堅持與不放棄。感謝一路上互相扶持的隊友，這份革命情感會永遠留存。";
+      reflectionFull = "回顧這次 2026 熟齡剖地瓜壯騎，這是一段無與倫比的旅程。出發前的心情是既期待又怕受傷害，但當大家並肩踩上踏板、迎著風雨互相照應時，所有的疲累都化成了前進的力量。這張完騎證書，是我們每個人用意志力與汗水換來的榮耀，也見證了車隊夥伴間深厚的革命情感。謝謝大家的照應，我們終於一起完成了這趟壯舉！";
+      break;
+  }
+  
+  if (ans1) {
+    const cleanAns1 = ans1.replace(/[。，]/g, " ");
+    reflectionShort = `完成縱貫台灣對我意義非凡。${cleanAns1.substring(0, 50)}。這張證書記錄了我的汗水與堅持，更感謝路上隊友間溫馨照應的革命情感！`;
+    reflectionFull = `回顧這次 2026 熟齡剖地瓜壯騎，最想留下的心聲是：${ans1}。在騎乘中，${ans2 || "大家一路互相幫忙擋風破風、支援車及時遞上香蕉補給，真的非常有愛"}。${ans3 ? ("對我而言，" + ans3) : ""}這份完騎證書是意志力的實證，也是所有人並肩作戰的結晶，是此生最難忘的革命回憶！`;
+  }
+  
+  return `[SHORT]
+${reflectionShort}
+[/SHORT]
+[FULL]
+${reflectionFull}
+[/FULL]`;
 };
 
 // System instruction for follow-up question generation
@@ -450,6 +713,9 @@ export default function ReflectionPage() {
   const [member, setMember] = useState("");
   const [day, setDay] = useState(""); // Default to empty string for placeholder
   const [period, setPeriod] = useState("afternoon"); // "morning", "afternoon", "supplement"
+  
+  // [NEW] Mode selector: "daily" (每日心得) or "certificate" (完騎感言助理)
+  const [reflectionMode, setReflectionMode] = useState("daily");
 
   // New Chat Conversational States
   const [chatStep, setChatStep] = useState("setup"); // "setup", "chat", "review"
@@ -457,6 +723,10 @@ export default function ReflectionPage() {
   const [currentInput, setCurrentInput] = useState("");
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [polishedReflection, setPolishedReflection] = useState("");
+  
+  // [NEW] Polished dual output for certificate reflections
+  const [polishedReflectionShort, setPolishedReflectionShort] = useState("");
+  const [polishedReflectionFull, setPolishedReflectionFull] = useState("");
   
   const [geminiApiKey, setGeminiApiKey] = useState(() => {
     if (typeof window === "undefined") return "";
@@ -506,6 +776,12 @@ export default function ReflectionPage() {
   const [filterDay, setFilterDay] = useState("");
   const [filterPeriod, setFilterPeriod] = useState("");
   const [filterQuestionType, setFilterQuestionType] = useState("all"); // "all", "core", "special"
+  
+  // [NEW] Filter for reflection type: "all" (全部), "daily" (每日心得), "certificate" (完騎感言)
+  const [filterType, setFilterType] = useState("all");
+  
+  // [NEW] State to track copy feedback in viewer cards
+  const [copiedKey, setCopiedKey] = useState("");
 
   // Diagnostics State (Roger Exclusive Admin Panel)
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
@@ -533,6 +809,8 @@ export default function ReflectionPage() {
     setChatStep("setup");
     setChatHistory([]);
     setPolishedReflection("");
+    setPolishedReflectionShort("");
+    setPolishedReflectionFull("");
   };
 
   // Reset form status (called when writing next reflection)
@@ -547,10 +825,14 @@ export default function ReflectionPage() {
       alert("請選擇您的名字！");
       return;
     }
-    if (!day) {
+    
+    // For daily reflection, day is mandatory. For certificate, it's auto-configured to 99
+    if (reflectionMode === "daily" && !day) {
       alert("請選擇天數！");
       return;
     }
+    
+    const activeDay = reflectionMode === "certificate" ? 99 : parseInt(day);
     
     // Find the profile matching member
     const profile = riderProfiles.find(p => p.displayName === member) || {
@@ -564,7 +846,9 @@ export default function ReflectionPage() {
     };
     
     // Generate opening question
-    const openingQ = getOpeningQuestion(profile, day);
+    const openingQ = reflectionMode === "certificate" 
+      ? `回顧這次 2026 熟齡剖地瓜壯騎，你現在最想留下的一句話或一段感受是什麼？`
+      : getOpeningQuestion(profile, activeDay);
     
     // Determine active engine state
     const hasLocalKey = !!geminiApiKey;
@@ -622,44 +906,48 @@ export default function ReflectionPage() {
       
       let replyText = "";
       
-      if (userMessageCount === 1) {
-        // First reply: AI feedback + 1st follow-up question
-        const route = dailyRoutes.find(r => r.day === parseInt(day));
-        const systemInstruction = getSystemInstructionForFollowUp(profile, day, period, route);
+      if (reflectionMode === "certificate") {
         const geminiContents = updatedHistory.map(msg => ({
           role: msg.role === 'ai' ? 'model' : 'user',
           parts: [{ text: msg.text }]
         }));
-        
-        try {
-          replyText = await callGeminiAPI(geminiApiKey, geminiContents, systemInstruction);
-          setIsUsingSimulator(false);
-        } catch (apiErr) {
-          console.error("⚠️ [WARNING] Gemini API failed, falling back to Local Rule-Based Simulator.", apiErr);
-          replyText = generateSimulatorFollowUp(profile, day, period, userText, updatedHistory);
-          setIsUsingSimulator(true);
-        }
-        
-        setChatHistory(prev => [
-          ...prev,
-          { role: "ai", text: replyText, timestamp: new Date().toISOString() }
-        ]);
-      } else if (userMessageCount === 2) {
-        // Second reply: AI feedback + Closing confirmation question
-        const route = dailyRoutes.find(r => r.day === parseInt(day));
-        const systemInstruction = getSystemInstructionForClosingQuestion(profile, day, period, route);
-        const geminiContents = updatedHistory.map(msg => ({
-          role: msg.role === 'ai' ? 'model' : 'user',
-          parts: [{ text: msg.text }]
-        }));
-        
-        try {
-          replyText = await callGeminiAPI(geminiApiKey, geminiContents, systemInstruction);
-          setIsUsingSimulator(false);
-        } catch (apiErr) {
-          console.error("⚠️ [WARNING] Gemini API failed, falling back to Local Rule-Based Simulator.", apiErr);
-          replyText = generateSimulatorClosingQuestion(profile, userText, day);
-          setIsUsingSimulator(true);
+
+        if (userMessageCount === 1) {
+          // Certificate Mode: First reply -> Ask 2nd Question (Dynamic)
+          const systemInstruction = getSystemInstructionForCertificateReflectionFollowUp(profile, 1);
+          try {
+            replyText = await callGeminiAPI(geminiApiKey, geminiContents, systemInstruction);
+            setIsUsingSimulator(false);
+          } catch (apiErr) {
+            console.error("⚠️ [WARNING] Gemini API Certificate Follow-up 1 failed, using simulator.", apiErr);
+            replyText = generateCertificateReflectionSimulatorFollowUp(profile, userText, updatedHistory);
+            setIsUsingSimulator(true);
+          }
+        } else if (userMessageCount === 2) {
+          // Certificate Mode: Second reply -> Determine whether to ask 3rd Question or close
+          const systemInstruction = getSystemInstructionForCertificateReflectionFollowUp(profile, 2);
+          try {
+            replyText = await callGeminiAPI(geminiApiKey, geminiContents, systemInstruction);
+            setIsUsingSimulator(false);
+          } catch (apiErr) {
+            console.error("⚠️ [WARNING] Gemini API Certificate Follow-up 2 failed, using simulator.", apiErr);
+            replyText = generateCertificateReflectionSimulatorFollowUp(profile, userText, updatedHistory);
+            setIsUsingSimulator(true);
+          }
+        } else {
+          // Certificate Mode: Third or further reply -> Warm closing, no more questions
+          const systemInstruction = `你是一位懂車隊、溫慢且傾聽的「單車壯騎完騎感言秘書」阿呆。
+目前正與成員「${profile.displayName}${profile.honorific}」對話。對方已經分享並補充完了他的完騎感言心聲。
+請針對他剛剛的最後補充做一個極其簡短的溫馨回應（不超過兩句話），告訴他記錄已經非常完整，可以點擊下方的「幫我整理完騎感言」按鈕。請不要再提出任何新的問題！
+⚠️ 重要人名限制：本專案成員中包含一名成員名為「PP Medicine」（displayName 為 "PP Medicine"），請統一稱呼他為「PP Medicine 大哥」，絕對不可寫成「Madison」或其他名字。`;
+          try {
+            replyText = await callGeminiAPI(geminiApiKey, geminiContents, systemInstruction);
+            setIsUsingSimulator(false);
+          } catch (apiErr) {
+            console.error("⚠️ [WARNING] Gemini API Certificate Closing failed, using simulator.", apiErr);
+            replyText = generateCertificateReflectionSimulatorFollowUp(profile, userText, updatedHistory);
+            setIsUsingSimulator(true);
+          }
         }
         
         setChatHistory(prev => [
@@ -667,30 +955,77 @@ export default function ReflectionPage() {
           { role: "ai", text: replyText, timestamp: new Date().toISOString() }
         ]);
       } else {
-        // Third or further reply: AI final closing feedback
-        const systemInstruction = `你是一位懂車隊、溫慢且傾聽的「單車手記秘書」阿呆。
+        // Daily Reflection Mode (Default)
+        if (userMessageCount === 1) {
+          // First reply: AI feedback + 1st follow-up question
+          const route = dailyRoutes.find(r => r.day === parseInt(day));
+          const systemInstruction = getSystemInstructionForFollowUp(profile, day, period, route);
+          const geminiContents = updatedHistory.map(msg => ({
+            role: msg.role === 'ai' ? 'model' : 'user',
+            parts: [{ text: msg.text }]
+          }));
+          
+          try {
+            replyText = await callGeminiAPI(geminiApiKey, geminiContents, systemInstruction);
+            setIsUsingSimulator(false);
+          } catch (apiErr) {
+            console.error("⚠️ [WARNING] Gemini API failed, falling back to Local Rule-Based Simulator.", apiErr);
+            replyText = generateSimulatorFollowUp(profile, day, period, userText, updatedHistory);
+            setIsUsingSimulator(true);
+          }
+          
+          setChatHistory(prev => [
+            ...prev,
+            { role: "ai", text: replyText, timestamp: new Date().toISOString() }
+          ]);
+        } else if (userMessageCount === 2) {
+          // Second reply: AI feedback + Closing confirmation question
+          const route = dailyRoutes.find(r => r.day === parseInt(day));
+          const systemInstruction = getSystemInstructionForClosingQuestion(profile, day, period, route);
+          const geminiContents = updatedHistory.map(msg => ({
+            role: msg.role === 'ai' ? 'model' : 'user',
+            parts: [{ text: msg.text }]
+          }));
+          
+          try {
+            replyText = await callGeminiAPI(geminiApiKey, geminiContents, systemInstruction);
+            setIsUsingSimulator(false);
+          } catch (apiErr) {
+            console.error("⚠️ [WARNING] Gemini API failed, falling back to Local Rule-Based Simulator.", apiErr);
+            replyText = generateSimulatorClosingQuestion(profile, userText, day);
+            setIsUsingSimulator(true);
+          }
+          
+          setChatHistory(prev => [
+            ...prev,
+            { role: "ai", text: replyText, timestamp: new Date().toISOString() }
+          ]);
+        } else {
+          // Third or further reply: AI final closing feedback
+          const systemInstruction = `你是一位懂車隊、溫慢且傾聽的「單車手記秘書」阿呆。
 目前正與成員「${profile.displayName}${profile.honorific}」對話。對方已經分享並補充完了他的騎乘心得。
 請針對他剛剛的最後補充做一個極其簡短 of 溫馨回應（不超過兩句話），告訴他記錄已經非常完整，可以點擊下方的「幫我整理成心得」按鈕。請不要再提出任何新的問題！
 ⚠️ 重要人名限制：本專案成員中包含一名成員名為「PP Medicine」（displayName 為 "PP Medicine"），請統一稱呼他為「PP Medicine 大哥」，絕對不可寫成「Madison」或其他名字。`;
-        
-        const geminiContents = updatedHistory.map(msg => ({
-          role: msg.role === 'ai' ? 'model' : 'user',
-          parts: [{ text: msg.text }]
-        }));
-        
-        try {
-          replyText = await callGeminiAPI(geminiApiKey, geminiContents, systemInstruction);
-          setIsUsingSimulator(false);
-        } catch (apiErr) {
-          console.error("⚠️ [WARNING] Gemini API failed, falling back to Local Rule-Based Simulator.", apiErr);
-          replyText = generateSimulatorClosing(profile, userText, day);
-          setIsUsingSimulator(true);
+          
+          const geminiContents = updatedHistory.map(msg => ({
+            role: msg.role === 'ai' ? 'model' : 'user',
+            parts: [{ text: msg.text }]
+          }));
+          
+          try {
+            replyText = await callGeminiAPI(geminiApiKey, geminiContents, systemInstruction);
+            setIsUsingSimulator(false);
+          } catch (apiErr) {
+            console.error("⚠️ [WARNING] Gemini API failed, falling back to Local Rule-Based Simulator.", apiErr);
+            replyText = generateSimulatorClosing(profile, userText, day);
+            setIsUsingSimulator(true);
+          }
+          
+          setChatHistory(prev => [
+            ...prev,
+            { role: "ai", text: replyText, timestamp: new Date().toISOString() }
+          ]);
         }
-        
-        setChatHistory(prev => [
-          ...prev,
-          { role: "ai", text: replyText, timestamp: new Date().toISOString() }
-        ]);
       }
     } catch (err) {
       console.error("Error in chat logic:", err);
@@ -724,37 +1059,75 @@ export default function ReflectionPage() {
         avoid: ""
       };
       
-      const route = dailyRoutes.find(r => r.day === parseInt(day));
       let polishedText = "";
       
-      const systemInstruction = getSystemInstructionForPolish(profile, day, period, route);
-      const chatLogSummary = chatHistory
-        .map(msg => `${msg.role === 'user' ? '成員' : '小秘書'}：${msg.text}`)
-        .join("\n");
-      
-      const geminiContents = [
-        {
-          role: "user",
-          parts: [{ text: `請根據以下對話紀錄，幫我整理成一篇感人且有溫度的第一人稱心得散文：\n\n${chatLogSummary}` }]
+      if (reflectionMode === "certificate") {
+        const systemInstruction = getSystemInstructionForCertificateReflectionPolish(profile);
+        const chatLogSummary = chatHistory
+          .map(msg => `${msg.role === 'user' ? '成員' : '小秘書'}：${msg.text}`)
+          .join("\n");
+        
+        const geminiContents = [
+          {
+            role: "user",
+            parts: [{ text: `請根據以下對話紀錄，幫我整理出完騎感言（短版與完整版）：\n\n${chatLogSummary}` }]
+          }
+        ];
+        
+        try {
+          polishedText = await callGeminiAPI(geminiApiKey, geminiContents, systemInstruction);
+          setIsUsingSimulator(false);
+        } catch (apiErr) {
+          console.error("⚠️ [WARNING] Gemini API Certificate Polish failed, using simulator.", apiErr);
+          polishedText = generateCertificateReflectionSimulatorPolish(profile, chatHistory);
+          setIsUsingSimulator(true);
         }
-      ];
-      
-      try {
-        polishedText = await callGeminiAPI(geminiApiKey, geminiContents, systemInstruction);
-        setIsUsingSimulator(false);
-      } catch (apiErr) {
-        console.error("⚠️ [WARNING] Gemini API Polish failed, falling back to Local Rule-Based Simulator.", apiErr);
-        polishedText = generateSimulatorPolish(profile, day, period, chatHistory);
-        setIsUsingSimulator(true);
+        
+        const { reflectionShort, reflectionFull } = parseCertificateReflection(polishedText);
+        setPolishedReflectionShort(reflectionShort);
+        setPolishedReflectionFull(reflectionFull);
+        setPolishedReflection(reflectionFull); // For backward compatibility backup
+        setChatStep("review");
+      } else {
+        // Daily Reflection Polish (Default)
+        const route = dailyRoutes.find(r => r.day === parseInt(day));
+        const systemInstruction = getSystemInstructionForPolish(profile, day, period, route);
+        const chatLogSummary = chatHistory
+          .map(msg => `${msg.role === 'user' ? '成員' : '小秘書'}：${msg.text}`)
+          .join("\n");
+        
+        const geminiContents = [
+          {
+            role: "user",
+            parts: [{ text: `請根據以下對話紀錄，幫我整理成一篇感人且有溫度的第一人稱心得散文：\n\n${chatLogSummary}` }]
+          }
+        ];
+        
+        try {
+          polishedText = await callGeminiAPI(geminiApiKey, geminiContents, systemInstruction);
+          setIsUsingSimulator(false);
+        } catch (apiErr) {
+          console.error("⚠️ [WARNING] Gemini API Polish failed, falling back to Local Rule-Based Simulator.", apiErr);
+          polishedText = generateSimulatorPolish(profile, day, period, chatHistory);
+          setIsUsingSimulator(true);
+        }
+        
+        setPolishedReflection(polishedText);
+        setChatStep("review");
       }
-      
-      setPolishedReflection(polishedText);
-      setChatStep("review");
     } catch (err) {
       console.error("Error compiling reflection:", err);
       const profile = riderProfiles.find(p => p.displayName === member) || { displayName: member, honorific: "大哥/姐" };
-      const fallbackPolish = generateSimulatorPolish(profile, day, period, chatHistory);
-      setPolishedReflection(fallbackPolish);
+      if (reflectionMode === "certificate") {
+        const fallbackText = generateCertificateReflectionSimulatorPolish(profile, chatHistory);
+        const { reflectionShort, reflectionFull } = parseCertificateReflection(fallbackText);
+        setPolishedReflectionShort(reflectionShort);
+        setPolishedReflectionFull(reflectionFull);
+        setPolishedReflection(reflectionFull);
+      } else {
+        const fallbackPolish = generateSimulatorPolish(profile, day, period, chatHistory);
+        setPolishedReflection(fallbackPolish);
+      }
       setIsUsingSimulator(true);
       setChatStep("review");
     } finally {
@@ -768,13 +1141,21 @@ export default function ReflectionPage() {
       alert("請選擇您的名字！");
       return;
     }
-    if (!day) {
+    if (reflectionMode === "daily" && !day) {
       alert("請選擇天數！");
       return;
     }
-    if (!polishedReflection.trim()) {
-      alert("心得整理內容不能為空！");
-      return;
+    
+    if (reflectionMode === "certificate") {
+      if (!polishedReflectionShort.trim() || !polishedReflectionFull.trim()) {
+        alert("感言整理內容不能為空！");
+        return;
+      }
+    } else {
+      if (!polishedReflection.trim()) {
+        alert("心得整理內容不能為空！");
+        return;
+      }
     }
     
     setIsSubmitting(true);
@@ -782,10 +1163,13 @@ export default function ReflectionPage() {
     
     const submissionData = {
       member,
-      day: parseInt(day),
-      period,
+      day: reflectionMode === "certificate" ? 99 : parseInt(day),
+      period: reflectionMode === "certificate" ? "certificate" : period,
+      type: reflectionMode === "certificate" ? "certificateReflection" : "daily",
       chatHistory,
-      aiRefinement: polishedReflection.trim(),
+      reflectionShort: reflectionMode === "certificate" ? polishedReflectionShort.trim() : null,
+      reflectionFull: reflectionMode === "certificate" ? polishedReflectionFull.trim() : null,
+      aiRefinement: reflectionMode === "certificate" ? polishedReflectionFull.trim() : polishedReflection.trim(),
       createdAt: new Date().toISOString(),
     };
     
@@ -803,6 +1187,8 @@ export default function ReflectionPage() {
     setChatStep("setup");
     setChatHistory([]);
     setPolishedReflection("");
+    setPolishedReflectionShort("");
+    setPolishedReflectionFull("");
     clearForm();
     
     if (navigator.onLine) {
@@ -840,6 +1226,13 @@ export default function ReflectionPage() {
     }).catch((error) => {
       console.warn("Cloud save failed in background (will retry later):", error);
     });
+  };
+
+  // Helper function to copy text and set copy status with feedback
+  const handleCopyText = (key, text) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(""), 2000);
   };
 
   // Fetch submissions from Firebase
@@ -973,6 +1366,7 @@ export default function ReflectionPage() {
       member,
       day: parseInt(day),
       period,
+      type: "daily",
       rawAnswers,
       aiRefinement: finalAiRefinement,
       createdAt: new Date().toISOString(),
@@ -1154,12 +1548,63 @@ export default function ReflectionPage() {
 
   const mergedList = getMergedSubmissions();
 
+  const mapMemberToId = (memberName) => {
+    const name = memberName.trim();
+    if (name.includes("Volvo")) return "cp-volvo";
+    if (name.includes("Evan") || name.includes("山神")) return "evan";
+    if (name.includes("Pure")) return "pp-pure";
+    if (name.includes("Fenny")) return "pp-fenny";
+    if (name.includes("Server")) return "pp-server";
+    if (name.includes("Medicine")) return "pp-medicine";
+    if (name.includes("Sally")) return "sally";
+    if (name.includes("Roger")) return "pp-roger";
+    return name.toLowerCase().replace(/\s+/g, "-");
+  };
+
+  const getCertificateReflectionsSummary = () => {
+    const summary = {};
+    memberNames.forEach(name => {
+      // Find the latest reflection of type certificateReflection
+      const found = mergedList.find(r => 
+        (r.type === "certificateReflection" || r.day === 99) && 
+        r.member === name
+      );
+      summary[name] = found || null;
+    });
+    return summary;
+  };
+
+  const generateUpdatedCertificateDataCode = (summary) => {
+    const updatedArray = certificates.map(cert => {
+      // Find the corresponding member by mapping
+      const memberName = memberNames.find(m => mapMemberToId(m) === cert.id);
+      const record = memberName ? summary[memberName] : null;
+      if (record) {
+        return {
+          ...cert,
+          reflection: record.reflectionShort || cert.reflection,
+          reflectionFull: record.reflectionFull || cert.reflectionFull || record.reflectionShort,
+          reflectionDate: record.createdAt ? record.createdAt.substring(0, 10) : cert.reflectionDate
+        };
+      }
+      return cert;
+    });
+
+    return `export const certificates = ${JSON.stringify(updatedArray, null, 2)};`;
+  };
+
   // Filtered submissions
   const filteredSubmissions = mergedList.filter((sub) => {
     if (sub.day === 0 || sub.isTest) return false; // Filter out system tests
+    if (filterType === "daily" && (sub.type === "certificateReflection" || sub.day === 99)) return false;
+    if (filterType === "certificate" && sub.type !== "certificateReflection" && sub.day !== 99) return false;
     if (filterMember && sub.member !== filterMember) return false;
-    if (filterDay && sub.day !== parseInt(filterDay)) return false;
-    if (filterPeriod && sub.period !== filterPeriod) return false;
+    
+    // Only apply day and period filters when not in certificate filter mode
+    if (filterType !== "certificate") {
+      if (filterDay && sub.day !== parseInt(filterDay)) return false;
+      if (filterPeriod && sub.period !== filterPeriod) return false;
+    }
     return true;
   });
 
@@ -1248,81 +1693,133 @@ export default function ReflectionPage() {
                     <RefreshCw className="w-6 h-6 animate-pulse" />
                   </div>
                   <h3 className="text-base sm:text-lg font-black text-slate-800 tracking-tight">
-                    🤖 AI 對談式心得記錄 2.0
+                    {reflectionMode === "certificate" ? "🎓 AI 完騎感言寫作助理" : "🤖 AI 對談式心得記錄 2.0"}
                   </h3>
                   <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-sm mx-auto">
-                    陪你輕鬆聊出今天最值得留下的壯騎故事，免去填寫繁瑣問卷的疲憊！
+                    {reflectionMode === "certificate"
+                      ? "陪你用交談的方式，輕鬆整理出一份有靈魂感的完騎感言，可放在你的數位證書下方！"
+                      : "陪你輕鬆聊出今天最值得留下的壯騎故事，免去填寫繁瑣問卷的疲憊！"}
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-slate-100 pt-5">
-                  {/* Member Selection */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1.5">
-                      我是誰 <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={member}
-                      onChange={(e) => setMember(e.target.value)}
-                      required
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-biker-navy/20 cursor-pointer"
-                    >
-                      <option value="">選擇名字...</option>
-                      {memberNames.map((name) => (
-                        <option key={name} value={name}>
-                          {name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                {/* Mode Switcher Toggle */}
+                <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setReflectionMode("daily")}
+                    className={`flex-1 text-center py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                      reflectionMode === "daily"
+                        ? "bg-biker-navy text-white shadow-sm"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    📅 每日心得記錄
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReflectionMode("certificate")}
+                    className={`flex-1 text-center py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                      reflectionMode === "certificate"
+                        ? "bg-biker-navy text-white shadow-sm"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    🎓 完騎感言助理
+                  </button>
+                </div>
 
-                  {/* Day Selection */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1.5">
-                      今天是第幾天 <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={day}
-                      onChange={(e) => setDay(e.target.value ? parseInt(e.target.value) : "")}
-                      required
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-biker-navy/20 cursor-pointer"
-                    >
-                      <option value="">選擇天數...</option>
-                      {[1, 2, 3, 4, 5, 6, 7, 8].map((d) => (
-                        <option key={d} value={d}>
-                          Day {d}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Period Selection */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1.5">
-                      記錄時段 <span className="text-red-500">*</span>
-                    </label>
-                    <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                      {[
-                        { id: "morning", label: "上午" },
-                        { id: "afternoon", label: "下午" },
-                        { id: "supplement", label: "補充" }
-                      ].map((p) => (
-                        <button
-                          type="button"
-                          key={p.id}
-                          onClick={() => setPeriod(p.id)}
-                          className={`text-center py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                            period === p.id
-                              ? "bg-biker-navy text-white shadow-sm"
-                              : "text-slate-500 hover:text-slate-700"
-                          }`}
-                        >
-                          {p.label}
-                        </button>
-                      ))}
+                {reflectionMode === "certificate" ? (
+                  <div className="grid grid-cols-1 gap-4 border-t border-slate-100 pt-5">
+                    {/* Member Selection Only */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                        我是誰 <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={member}
+                        onChange={(e) => setMember(e.target.value)}
+                        required
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-biker-navy/20 cursor-pointer"
+                      >
+                        <option value="">選擇名字...</option>
+                        {memberNames.map((name) => (
+                          <option key={name} value={name}>
+                            {name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-slate-100 pt-5">
+                    {/* Member Selection */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                        我是誰 <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={member}
+                        onChange={(e) => setMember(e.target.value)}
+                        required
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-biker-navy/20 cursor-pointer"
+                      >
+                        <option value="">選擇名字...</option>
+                        {memberNames.map((name) => (
+                          <option key={name} value={name}>
+                            {name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Day Selection */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                        今天是第幾天 <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={day}
+                        onChange={(e) => setDay(e.target.value ? parseInt(e.target.value) : "")}
+                        required
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-biker-navy/20 cursor-pointer"
+                      >
+                        <option value="">選擇天數...</option>
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map((d) => (
+                          <option key={d} value={d}>
+                            Day {d}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Period Selection */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                        記錄時段 <span className="text-red-500">*</span>
+                      </label>
+                      <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                        {[
+                          { id: "morning", label: "上午" },
+                          { id: "afternoon", label: "下午" },
+                          { id: "supplement", label: "補充" }
+                        ].map((p) => (
+                          <button
+                            type="button"
+                            key={p.id}
+                            onClick={() => setPeriod(p.id)}
+                            className={`text-center py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                              period === p.id
+                                ? "bg-biker-navy text-white shadow-sm"
+                                : "text-slate-500 hover:text-slate-700"
+                            }`}
+                          >
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="pt-2">
                   <button
@@ -1345,12 +1842,25 @@ export default function ReflectionPage() {
                     <span className="font-black text-xs text-slate-700 bg-slate-200/60 px-2 py-0.5 rounded-md">
                       👤 {member}
                     </span>
-                    <span className="bg-biker-navy-dark text-white font-black text-[10px] px-2 py-0.5 rounded-md">
-                      Day {day}
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
-                      {period === "morning" ? "☀️ 上午" : period === "afternoon" ? "⛰️ 下午" : "📝 補充"}
-                    </span>
+                    {reflectionMode === "certificate" ? (
+                      <>
+                        <span className="bg-biker-orange text-white font-black text-[10px] px-2 py-0.5 rounded-md animate-pulse">
+                          🎓 完騎證書
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                          📜 個人感言
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="bg-biker-navy-dark text-white font-black text-[10px] px-2 py-0.5 rounded-md">
+                          Day {day}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                          {period === "morning" ? "☀️ 上午" : period === "afternoon" ? "⛰️ 下午" : "📝 補充"}
+                        </span>
+                      </>
+                    )}
                   </div>
                   
                   {/* Status Badge */}
@@ -1417,7 +1927,7 @@ export default function ReflectionPage() {
                         onClick={handleCompileReflection}
                         className="bg-slate-700 hover:bg-slate-800 text-white font-black text-xs px-6 py-3.5 rounded-xl shadow-lg flex items-center space-x-1.5 transition-all active:scale-95 cursor-pointer"
                       >
-                        <span>不補充，直接幫我整理心得 ✨</span>
+                        <span>{reflectionMode === "certificate" ? "不補充，直接幫我整理感言 ✨" : "不補充，直接幫我整理心得 ✨"}</span>
                       </button>
                     </div>
                   )}
@@ -1437,7 +1947,7 @@ export default function ReflectionPage() {
                           e.target.style.height = 'auto';
                           e.target.style.height = `${Math.max(120, e.target.scrollHeight)}px`;
                         }}
-                        placeholder="請輸入或語音說說今天的心得..."
+                        placeholder={reflectionMode === "certificate" ? "請輸入或語音說說你的完騎感受..." : "請輸入或語音說說今天的心得..."}
                         style={{ minHeight: "120px" }}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 pb-12 text-xs md:text-sm text-slate-700 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-biker-navy/15 focus:bg-white transition-all leading-relaxed resize-none overflow-y-auto"
                         onKeyDown={(e) => {
@@ -1477,14 +1987,18 @@ export default function ReflectionPage() {
                   </form>
                 ) : (
                   <div className="border-t border-slate-100 p-6 bg-slate-50 text-center space-y-3">
-                    <p className="text-xs text-slate-500 font-bold">阿呆已記錄下您豐富的騎乘點滴，請點擊下方按鈕產出完整手記！</p>
+                    <p className="text-xs text-slate-500 font-bold">
+                      {reflectionMode === "certificate" 
+                        ? "阿呆已記錄下您深刻的完騎心聲，請點擊下方按鈕產出完騎感言！" 
+                        : "阿呆已記錄下您豐富的騎乘點滴，請點擊下方按鈕產出完整手記！"}
+                    </p>
                     <div className="flex justify-center animate-bounce-slow">
                       <button
                         type="button"
                         onClick={handleCompileReflection}
                         className="bg-biker-orange hover:bg-biker-orange-dark text-white font-black text-xs px-8 py-4 rounded-xl shadow-lg flex items-center space-x-1.5 transition-all active:scale-95 cursor-pointer"
                       >
-                        <span>幫我整理成心得 ✨</span>
+                        <span>{reflectionMode === "certificate" ? "幫我整理完騎感言 ✨" : "幫我整理成心得 ✨"}</span>
                       </button>
                     </div>
                     <div className="text-center pt-2">
@@ -1519,34 +2033,77 @@ export default function ReflectionPage() {
                     <CheckCircle2 className="w-6 h-6" />
                   </div>
                   <h3 className="text-base sm:text-lg font-black text-slate-800 tracking-tight">
-                    ✨ 整理好的壯騎心得手記
+                    {reflectionMode === "certificate" ? "🎓 整理好的完騎感言手記" : "✨ 整理好的壯騎心得手記"}
                   </h3>
                   <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-sm mx-auto">
-                    阿呆已經幫你把聊天的內容精煉成一段好故事囉！請在下方檢查或微調修改：
+                    {reflectionMode === "certificate" 
+                      ? "阿呆已經把聊天的內容整理成適合放在證書卡片的短版感言與完整版囉！請在下方檢查或微調修改："
+                      : "阿呆已經幫你把聊天的內容精煉成一段好故事囉！請在下方檢查或微調修改："}
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="block text-xs font-bold text-slate-500">
-                    完整心得內容（可自由修改編輯）
-                  </label>
-                  <textarea
-                    rows={8}
-                    value={polishedReflection}
-                    onChange={(e) => setPolishedReflection(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 leading-relaxed font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-biker-navy/15 focus:bg-white transition-all resize-y"
-                  />
-                </div>
+                {reflectionMode === "certificate" ? (
+                  <div className="space-y-4">
+                    {/* Short Reflection Textarea (100-160 words) */}
+                    <div className="space-y-2">
+                      <label className="block text-xs font-bold text-slate-500 flex justify-between">
+                        <span>🎓 證書卡片感言 (短版，建議 100 - 160 字)</span>
+                        <span className={polishedReflectionShort.length >= 100 && polishedReflectionShort.length <= 160 ? "text-green-600 font-bold" : "text-amber-600 font-bold"}>
+                          目前字數：{polishedReflectionShort.length} 字
+                        </span>
+                      </label>
+                      <textarea
+                        rows={4}
+                        value={polishedReflectionShort}
+                        onChange={(e) => setPolishedReflectionShort(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 leading-relaxed font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-biker-navy/15 focus:bg-white transition-all resize-y"
+                      />
+                    </div>
+
+                    {/* Full Reflection Textarea (200-350 words) */}
+                    <div className="space-y-2">
+                      <label className="block text-xs font-bold text-slate-500 flex justify-between">
+                        <span>📜 完整版完騎感言 (長版，建議 200 - 350 字，未來展開閱讀使用)</span>
+                        <span className={polishedReflectionFull.length >= 200 && polishedReflectionFull.length <= 350 ? "text-green-600 font-bold" : "text-amber-600 font-bold"}>
+                          目前字數：{polishedReflectionFull.length} 字
+                        </span>
+                      </label>
+                      <textarea
+                        rows={6}
+                        value={polishedReflectionFull}
+                        onChange={(e) => setPolishedReflectionFull(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 leading-relaxed font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-biker-navy/15 focus:bg-white transition-all resize-y"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-slate-500">
+                      完整心得內容（可自由修改編輯）
+                    </label>
+                    <textarea
+                      rows={8}
+                      value={polishedReflection}
+                      onChange={(e) => setPolishedReflection(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 leading-relaxed font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-biker-navy/15 focus:bg-white transition-all resize-y"
+                    />
+                  </div>
+                )}
 
                 <div className="flex flex-col sm:flex-row gap-2 border-t border-slate-100 pt-5">
                   <button
                     type="button"
                     onClick={handleChatSubmit}
-                    disabled={isSubmitting || !polishedReflection.trim()}
+                    disabled={
+                      isSubmitting || 
+                      (reflectionMode === "certificate" 
+                        ? (!polishedReflectionShort.trim() || !polishedReflectionFull.trim()) 
+                        : !polishedReflection.trim())
+                    }
                     className="flex-1 py-3 px-6 rounded-xl font-black text-sm text-white shadow-md flex items-center justify-center space-x-2 transition-all active:scale-[0.98] bg-biker-orange hover:bg-biker-orange-dark cursor-pointer disabled:bg-slate-300 disabled:cursor-not-allowed"
                   >
                     <Send className="w-4 h-4" />
-                    <span>{isSubmitting ? "正在送出..." : "確認送出心得紀錄 📤"}</span>
+                    <span>{isSubmitting ? "正在送出..." : (reflectionMode === "certificate" ? "確認送出完騎感言 📤" : "確認送出心得紀錄 📤")}</span>
                   </button>
                   
                   <button
@@ -1730,6 +2287,34 @@ export default function ReflectionPage() {
               </button>
             </div>
 
+            {/* Record Type Filter Buttons */}
+            <div className="flex bg-slate-100 p-0.5 rounded-lg mb-3 border border-slate-200">
+              <button
+                onClick={() => setFilterType("all")}
+                className={`flex-1 text-center py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                  filterType === "all" ? "bg-white text-biker-navy shadow-xs" : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                📋 全部紀錄
+              </button>
+              <button
+                onClick={() => setFilterType("daily")}
+                className={`flex-1 text-center py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                  filterType === "daily" ? "bg-white text-biker-navy shadow-xs" : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                📅 每日心得
+              </button>
+              <button
+                onClick={() => setFilterType("certificate")}
+                className={`flex-1 text-center py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                  filterType === "certificate" ? "bg-white text-biker-navy shadow-xs" : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                🎓 完騎感言
+              </button>
+            </div>
+
             <div className="grid grid-cols-3 gap-1.5">
               {/* Member filter */}
               <div>
@@ -1752,7 +2337,10 @@ export default function ReflectionPage() {
                 <select
                   value={filterDay}
                   onChange={(e) => setFilterDay(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-1.5 pr-4.5 py-1.5 text-[10px] sm:text-xs text-slate-700 font-semibold focus:outline-none cursor-pointer"
+                  disabled={filterType === "certificate"}
+                  className={`w-full bg-slate-50 border border-slate-200 rounded-xl pl-1.5 pr-4.5 py-1.5 text-[10px] sm:text-xs text-slate-700 font-semibold focus:outline-none cursor-pointer ${
+                    filterType === "certificate" ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   <option value="">所有天數</option>
                   {[1, 2, 3, 4, 5, 6, 7, 8].map((d) => (
@@ -1768,7 +2356,10 @@ export default function ReflectionPage() {
                 <select
                   value={filterPeriod}
                   onChange={(e) => setFilterPeriod(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-1.5 pr-4.5 py-1.5 text-[10px] sm:text-xs text-slate-700 font-semibold focus:outline-none cursor-pointer"
+                  disabled={filterType === "certificate"}
+                  className={`w-full bg-slate-50 border border-slate-200 rounded-xl pl-1.5 pr-4.5 py-1.5 text-[10px] sm:text-xs text-slate-700 font-semibold focus:outline-none cursor-pointer ${
+                    filterType === "certificate" ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   <option value="">所有時段</option>
                   <option value="morning">上午紀錄</option>
@@ -1780,26 +2371,28 @@ export default function ReflectionPage() {
             
             <div className="mt-3 flex justify-between items-center text-[10px] text-slate-400 font-medium">
               <span>共篩選出 {filteredSubmissions.length} 筆心得紀錄</span>
-              <div className="space-x-1.5">
-                <button
-                  onClick={() => setFilterQuestionType("all")}
-                  className={`px-2 py-0.5 rounded ${filterQuestionType === "all" ? "bg-slate-200 text-slate-700" : "hover:bg-slate-100"}`}
-                >
-                  全部題目
-                </button>
-                <button
-                  onClick={() => setFilterQuestionType("core")}
-                  className={`px-2 py-0.5 rounded ${filterQuestionType === "core" ? "bg-slate-200 text-slate-700" : "hover:bg-slate-100"}`}
-                >
-                  僅核心題
-                </button>
-                <button
-                  onClick={() => setFilterQuestionType("special")}
-                  className={`px-2 py-0.5 rounded ${filterQuestionType === "special" ? "bg-slate-200 text-slate-700" : "hover:bg-slate-100"}`}
-                >
-                  僅特別題
-                </button>
-              </div>
+              {filterType !== "certificate" && (
+                <div className="space-x-1.5">
+                  <button
+                    onClick={() => setFilterQuestionType("all")}
+                    className={`px-2 py-0.5 rounded ${filterQuestionType === "all" ? "bg-slate-200 text-slate-700" : "hover:bg-slate-100"}`}
+                  >
+                    全部題目
+                  </button>
+                  <button
+                    onClick={() => setFilterQuestionType("core")}
+                    className={`px-2 py-0.5 rounded ${filterQuestionType === "core" ? "bg-slate-200 text-slate-700" : "hover:bg-slate-100"}`}
+                  >
+                    僅核心題
+                  </button>
+                  <button
+                    onClick={() => setFilterQuestionType("special")}
+                    className={`px-2 py-0.5 rounded ${filterQuestionType === "special" ? "bg-slate-200 text-slate-700" : "hover:bg-slate-100"}`}
+                  >
+                    僅特別題
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1892,8 +2485,98 @@ export default function ReflectionPage() {
 
                     {/* Answers block */}
                     <div className="space-y-4">
-                      {isNewFormat ? (
-                        <div className="space-y-3">
+                      {sub.type === "certificateReflection" || sub.day === 99 ? (
+                        <div className="space-y-4">
+                          {/* 短版感言 */}
+                          <div className="space-y-1.5">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center space-x-1">
+                              <span>🎓 證書卡片感言 (短版，建議 100 - 160 字)</span>
+                              <span className="text-[9px] text-slate-400 font-normal">({sub.reflectionShort?.length || 0} 字)</span>
+                            </span>
+                            <div className="bg-orange-50/20 border border-orange-100/50 p-3.5 rounded-xl text-xs text-slate-700 leading-relaxed font-semibold italic relative pl-8 select-all">
+                              <span className="absolute left-2.5 top-1.5 text-lg text-biker-orange font-serif leading-none select-none">“</span>
+                              {sub.reflectionShort || "（無短版感言）"}
+                            </div>
+                            <div className="flex justify-end">
+                              <button
+                                onClick={() => handleCopyText(`${sub.id}-short`, sub.reflectionShort || "")}
+                                className="flex items-center space-x-1 text-[10px] text-slate-500 hover:text-biker-navy font-bold bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded border border-slate-200/60 transition-colors cursor-pointer"
+                              >
+                                {copiedKey === `${sub.id}-short` ? (
+                                  <>
+                                    <Check className="w-3 h-3 text-green-600" />
+                                    <span className="text-green-600">已複製短版</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Clipboard className="w-3 h-3 text-slate-500" />
+                                    <span>複製短版 (證書用)</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* 完整版感言 */}
+                          <div className="space-y-1.5">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center space-x-1">
+                              <span>📜 完整版完騎感言 (長版)</span>
+                              <span className="text-[9px] text-slate-400 font-normal">({(sub.reflectionFull || sub.aiRefinement || "").length} 字)</span>
+                            </span>
+                            <div className="bg-slate-50/60 border border-slate-200/50 p-3.5 rounded-xl text-xs text-slate-700 leading-relaxed font-medium select-all">
+                              {sub.reflectionFull || sub.aiRefinement || "（無完整版感言）"}
+                            </div>
+                            <div className="flex justify-end">
+                              <button
+                                onClick={() => handleCopyText(`${sub.id}-full`, sub.reflectionFull || sub.aiRefinement || "")}
+                                className="flex-1 max-w-max flex items-center space-x-1 text-[10px] text-slate-500 hover:text-biker-navy font-bold bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded border border-slate-200/60 transition-colors cursor-pointer"
+                              >
+                                {copiedKey === `${sub.id}-full` ? (
+                                  <>
+                                    <Check className="w-3 h-3 text-green-600" />
+                                    <span className="text-green-600">已複製完整版</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Clipboard className="w-3 h-3 text-slate-500" />
+                                    <span>複製完整版</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* 對話紀錄 */}
+                          {sub.chatHistory && sub.chatHistory.length > 0 && (
+                            <div className="pt-1">
+                              <div className="flex justify-start">
+                                <button
+                                  type="button"
+                                  onClick={() => setShowRawForSub(prev => ({ ...prev, [sub.id]: !prev[sub.id] }))}
+                                  className="text-[9px] text-slate-400 hover:text-biker-navy font-bold underline cursor-pointer flex items-center space-x-1"
+                                >
+                                  <span>{showRaw ? "收起引導對話 ▲" : "展開查看引導對話歷史 💬"}</span>
+                                </button>
+                              </div>
+
+                              {showRaw && (
+                                <div className="space-y-2 mt-2 pl-3 border-l-2 border-biker-navy/20 py-1.5 animate-fade-in bg-slate-50/50 rounded-r-xl p-2.5">
+                                  {sub.chatHistory.map((chat, idx) => (
+                                    <div key={idx} className="text-[11px] leading-relaxed">
+                                      <span className={`inline-block font-bold mr-1.5 ${chat.role === 'user' ? 'text-biker-navy' : 'text-biker-orange'}`}>
+                                        {chat.role === 'user' ? '👤 隊友：' : '🤖 阿呆：'}
+                                      </span>
+                                      <span className="text-slate-700 font-medium select-text">{chat.text}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        isNewFormat ? (
+                          <div className="space-y-3">
                           {/* 完整心得段落 */}
                           <div className="bg-orange-50/20 border border-orange-100/50 p-3.5 rounded-xl text-xs text-slate-700 leading-relaxed font-medium italic relative pl-8 select-all">
                             <span className="absolute left-2.5 top-2 text-lg text-biker-orange font-serif leading-none select-none">“</span>
@@ -2017,7 +2700,7 @@ export default function ReflectionPage() {
                             </div>
                           )}
                         </>
-                      )}
+                      ))}
                     </div>
                   </div>
                 );
@@ -2183,11 +2866,147 @@ export default function ReflectionPage() {
                 </div>
               </div>
 
+              {/* Roger 完騎感言彙整與原始碼產出 */}
+              <div className="space-y-3 border-t border-slate-100 pt-4 text-left">
+                <h4 className="text-xs font-bold text-slate-800 flex items-center space-x-1">
+                  <Award className="w-3.5 h-3.5 text-biker-orange" />
+                  <span>3. 完騎感言彙整與原始碼產出 (Roger 專屬)</span>
+                </h4>
+                <p className="text-[11px] text-slate-400">
+                  一覽所有隊友目前已提交的最新完騎感言（短版/完整版），並可以直接複製為 JavaScript 程式碼結構，方便手動填回 <code className="bg-slate-100 px-1 py-0.5 rounded text-biker-orange font-mono font-bold text-[10px]">certificateData.js</code> 中。
+                </p>
+                
+                {/* 彙整表 */}
+                <div className="border border-slate-100 rounded-xl overflow-hidden text-[11px] bg-slate-50/50">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-100/80 text-slate-500 font-bold border-b border-slate-100">
+                        <th className="p-2.5">成員名稱</th>
+                        <th className="p-2.5">狀態</th>
+                        <th className="p-2.5 text-right">動作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        const summary = getCertificateReflectionsSummary();
+                        return Object.entries(summary).map(([name, record]) => {
+                          const id = mapMemberToId(name);
+                          const hasRecord = !!record;
+                          const copiedKeyString = `admin-code-${id}`;
+                          
+                          // Code block to copy
+                          const shortText = record?.reflectionShort || "";
+                          const fullText = record?.reflectionFull || "";
+                          const dateStr = record?.createdAt ? record.createdAt.substring(0, 10) : new Date().toISOString().substring(0, 10);
+                          
+                          const codeSnippet = `    reflection: ${JSON.stringify(shortText)},
+    reflectionFull: ${JSON.stringify(fullText)},
+    reflectionDate: ${JSON.stringify(dateStr)},`;
+
+                          return (
+                            <tr key={name} className="border-b border-slate-100 hover:bg-slate-100/30 transition-colors">
+                              <td className="p-2.5 font-bold text-slate-700">
+                                {name} <span className="text-[9px] text-slate-400 font-medium">({id})</span>
+                              </td>
+                              <td className="p-2.5">
+                                {hasRecord ? (
+                                  <span className="text-green-600 font-bold flex items-center">
+                                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1 animate-pulse"></span>
+                                    已完成
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400 flex items-center">
+                                    <span className="w-1.5 h-1.5 bg-slate-300 rounded-full mr-1"></span>
+                                    未提交
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-2.5 text-right">
+                                {hasRecord ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCopyText(copiedKeyString, codeSnippet)}
+                                    className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold py-1 px-2 rounded-lg text-[9px] transition-all active:scale-95 cursor-pointer inline-flex items-center space-x-1"
+                                  >
+                                    {copiedKey === copiedKeyString ? (
+                                      <>
+                                        <Check className="w-2.5 h-2.5 text-green-600" />
+                                        <span>已複製代碼</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Clipboard className="w-2.5 h-2.5 text-slate-400" />
+                                        <span>複製 JS 代碼</span>
+                                      </>
+                                    )}
+                                  </button>
+                                ) : (
+                                  <span className="text-[9px] text-slate-300 italic">無資料</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* 複製整套完整代碼 */}
+                {(() => {
+                  const summary = getCertificateReflectionsSummary();
+                  const totalCompleted = Object.values(summary).filter(Boolean).length;
+                  const allCode = generateUpdatedCertificateDataCode(summary);
+                  const allCopiedKey = "admin-code-all-certificates";
+                  
+                  if (totalCompleted === 0) return null;
+                  
+                  return (
+                    <div className="space-y-2 pt-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          目前已完成 {totalCompleted} 筆感言，可一鍵複製完整更新後的原始碼：
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText(allCopiedKey, allCode)}
+                          className="bg-biker-navy hover:bg-biker-navy-dark text-white font-bold py-1.5 px-3 rounded-lg text-[10px] shadow-sm transition-all active:scale-95 cursor-pointer inline-flex items-center space-x-1"
+                        >
+                          {copiedKey === allCopiedKey ? (
+                            <>
+                              <Check className="w-3 h-3 text-green-300" />
+                              <span>已複製完整檔案原始碼！</span>
+                            </>
+                          ) : (
+                            <>
+                              <Clipboard className="w-3 h-3 text-slate-300" />
+                              <span>複製全新 certificateData.js 完整代碼</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      
+                      <div className="relative">
+                        <textarea
+                          readOnly
+                          rows={6}
+                          value={allCode}
+                          className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-[9px] font-mono text-slate-300 focus:outline-none"
+                        />
+                        <div className="absolute top-2 right-2 text-[8px] bg-slate-800 text-slate-500 px-2 py-0.5 rounded font-bold uppercase select-none">
+                          Preview
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
               {/* Firestore Rules Instructions */}
               <div className="space-y-3 border-t border-slate-100 pt-4 text-left">
                 <h4 className="text-xs font-bold text-slate-800 flex items-center space-x-1">
                   <FileText className="w-3.5 h-3.5 text-slate-500" />
-                  <span>3. Firestore 安全性規則配置指南</span>
+                  <span>4. Firestore 安全性規則配置指南</span>
                 </h4>
                 
                 <div className="space-y-2">
