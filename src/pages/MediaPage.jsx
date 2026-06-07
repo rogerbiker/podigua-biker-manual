@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { db } from "../lib/firebase";
 import { dailyVideos } from "../data/tripData";
@@ -25,7 +25,9 @@ import {
   Play, 
   Image, 
   Eye,
-  Settings
+  Settings,
+  Maximize,
+  Minimize
 } from "lucide-react";
 
 export default function MediaPage({ initialView = "all" }) {
@@ -79,6 +81,88 @@ export default function MediaPage({ initialView = "all" }) {
 
   // Video play state for inline player
   const [isPlayerActive, setIsPlayerActive] = useState(false);
+
+  // Fullscreen states
+  const [isWebFullscreen, setIsWebFullscreen] = useState(false);
+  const [isNativeFullscreen, setIsNativeFullscreen] = useState(false);
+  const videoWrapperRef = useRef(null);
+
+  // Sync native fullscreen state
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isFs = !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement
+      );
+      setIsNativeFullscreen(isFs);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("mozfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
+    };
+  }, []);
+
+  // Listen to Escape key to exit Web Fullscreen
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setIsWebFullscreen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Handle day changes - exit web fullscreen
+  useEffect(() => {
+    setIsWebFullscreen(false);
+  }, [selectedDay]);
+
+  // Handle Fullscreen toggle function
+  const handleFullscreenToggle = () => {
+    const element = videoWrapperRef.current;
+    if (!element) return;
+
+    if (isNativeFullscreen) {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
+    } else if (isWebFullscreen) {
+      setIsWebFullscreen(false);
+    } else {
+      // Try native first
+      if (element.requestFullscreen) {
+        element.requestFullscreen().catch(() => {
+          setIsWebFullscreen(true);
+        });
+      } else if (element.webkitRequestFullscreen) {
+        element.webkitRequestFullscreen();
+      } else if (element.mozRequestFullScreen) {
+        element.mozRequestFullScreen();
+      } else if (element.msRequestFullscreen) {
+        element.msRequestFullscreen();
+      } else {
+        // Fallback for iPhone Safari
+        setIsWebFullscreen(true);
+      }
+    }
+  };
 
   // Thumbnail loading failure fallback state
   const [thumbnailFailed, setThumbnailFailed] = useState(false);
@@ -622,100 +706,72 @@ export default function MediaPage({ initialView = "all" }) {
             <div className="space-y-3">
               {/* If YouTube type (directly plays inline) */}
               {activeVideoType === "youtube" ? (
-                isPlayerActive ? (
-                  /* YouTube Inline iframe player */
-                  <div className="space-y-3">
-                    <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-lg border border-slate-100 bg-black animate-fade-in">
-                      <iframe
-                        src={`${activeYoutubeEmbedUrl}?autoplay=1&rel=0`}
-                        className="absolute inset-0 w-full h-full"
-                        title={activeTitle}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowFullScreen
-                      />
-                    </div>
+                /* YouTube Inline iframe player */
+                <div ref={videoWrapperRef} className={isWebFullscreen ? "fixed inset-0 z-50 bg-black flex flex-col justify-center items-center p-4 animate-fade-in" : "space-y-3"}>
+                  {isWebFullscreen && (
+                    <button
+                      type="button"
+                      onClick={() => setIsWebFullscreen(false)}
+                      className="absolute top-4 right-4 z-50 bg-slate-900/80 hover:bg-slate-800 text-white p-3 rounded-full shadow-lg border border-white/20 transition-all hover:scale-105 active:scale-95 flex items-center justify-center cursor-pointer"
+                      title="關閉全螢幕"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                  )}
+                  
+                  <div className={isWebFullscreen ? "w-full max-w-4xl aspect-video relative rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-black" : "relative w-full aspect-video rounded-2xl overflow-hidden shadow-lg border border-slate-100 bg-black"}>
+                    <iframe
+                      src={`${activeYoutubeEmbedUrl}?rel=0`}
+                      className="absolute inset-0 w-full h-full"
+                      title={activeTitle}
+                      allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                  
+                  {!isWebFullscreen && (
                     <p className="text-[10px] text-green-600 font-bold text-center mt-2 flex items-center justify-center space-x-1">
                       <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-ping"></span>
                       <span>影片可直接在手冊內播放，不會離開網站。</span>
                     </p>
-                    {activeGooglePhotosUrl && (
-                      <div className="flex justify-center pt-1.5">
-                        <a
-                          href={activeGooglePhotosUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center space-x-1.5 text-[11px] font-bold text-slate-500 hover:text-biker-orange bg-slate-100 hover:bg-slate-200/80 px-3.5 py-1.5 rounded-xl border border-slate-200/50 transition-colors shadow-xs"
-                        >
-                          <span>改用 Google Photos 觀看</span>
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      </div>
+                  )}
+                  
+                  <div className={`flex flex-wrap justify-center gap-3 pt-1.5 ${isWebFullscreen ? "text-white mt-4" : ""}`}>
+                    <button
+                      type="button"
+                      onClick={handleFullscreenToggle}
+                      className={`inline-flex items-center space-x-1.5 text-xs font-black px-4 py-2 rounded-xl border transition-all shadow-sm active:scale-95 cursor-pointer ${
+                        isWebFullscreen || isNativeFullscreen
+                          ? "bg-slate-800 hover:bg-slate-700 text-white border-slate-700 hover:border-slate-600"
+                          : "bg-biker-orange hover:bg-biker-orange-dark text-white border-biker-orange hover:border-biker-orange-dark"
+                      }`}
+                    >
+                      {isWebFullscreen || isNativeFullscreen ? (
+                        <>
+                          <Minimize className="w-4 h-4" />
+                          <span>退出全螢幕</span>
+                        </>
+                      ) : (
+                        <>
+                          <Maximize className="w-4 h-4" />
+                          <span>全螢幕觀看</span>
+                        </>
+                      )}
+                    </button>
+                    
+                    {activeGooglePhotosUrl && !isWebFullscreen && (
+                      <a
+                        href={activeGooglePhotosUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-500 hover:text-biker-orange bg-slate-100 hover:bg-slate-200/80 px-4 py-2 rounded-xl border border-slate-200/50 transition-colors shadow-xs"
+                      >
+                        <span>改用 Google Photos 觀看</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
                     )}
                   </div>
-                ) : (activeThumbnail && !thumbnailFailed) ? (
-                  /* YouTube cover image button (aspect-video to fit 16:9 perfectly) */
-                  <button
-                    type="button"
-                    onClick={() => setIsPlayerActive(true)}
-                    className="block max-w-md mx-auto aspect-video w-full relative rounded-2xl overflow-hidden shadow-md border border-slate-100/60 group cursor-pointer text-left focus:outline-none"
-                  >
-                    <img
-                      src={activeThumbnail}
-                      alt={activeTitle}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-103"
-                      onError={(e) => {
-                        // Fallback sequence for YouTube thumbnails
-                        if (e.target.src.includes("i.ytimg.com")) {
-                          // Try img.youtube.com
-                          e.target.src = e.target.src.replace("i.ytimg.com", "img.youtube.com");
-                        } else if (e.target.src.includes("hqdefault.jpg")) {
-                          // Try mqdefault
-                          e.target.src = e.target.src.replace("hqdefault.jpg", "mqdefault.jpg");
-                        } else if (e.target.src.includes("mqdefault.jpg")) {
-                          // Try 0.jpg
-                          e.target.src = e.target.src.replace("mqdefault.jpg", "0.jpg");
-                        } else {
-                          // Fallback to text play button
-                          setThumbnailFailed(true);
-                        }
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-black/40 transition-colors group-hover:bg-black/45" />
-                    <div className="absolute inset-0 flex flex-col items-center justify-between p-5 z-10">
-                      <div className="bg-slate-900/60 backdrop-blur-xs text-white px-3 py-1 rounded-full text-[9px] font-black tracking-wider uppercase">
-                        Day {selectedDay} 精選短片
-                      </div>
-                      <div className="bg-biker-orange text-white p-3.5 rounded-full shadow-lg transition-transform group-hover:scale-110 active:scale-95 duration-200">
-                        <Play className="w-6 h-6 fill-current translate-x-0.5" />
-                      </div>
-                      <div className="text-center">
-                        <span className="block text-xs font-black text-white drop-shadow-md text-center">
-                          播放 Day {selectedDay} 精選短片
-                        </span>
-                        <span className="inline-flex items-center text-[9px] text-slate-200 mt-1 font-bold">
-                          <span>在手冊內直接播放</span>
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-                ) : (
-                  /* YouTube fallback button if no thumbnail */
-                  <button
-                    type="button"
-                    onClick={() => setIsPlayerActive(true)}
-                    className="w-full bg-slate-50 border border-slate-200/60 rounded-2xl p-6 flex flex-col items-center justify-center space-y-3 hover:bg-slate-100/50 transition-colors shadow-sm group cursor-pointer focus:outline-none text-center"
-                  >
-                    <div className="bg-biker-orange text-white p-3 rounded-full shadow group-hover:scale-105 transition-transform">
-                      <Play className="w-6 h-6 fill-current" />
-                    </div>
-                    <div className="text-center">
-                      <span className="block text-xs font-bold text-slate-700">播放 Day {selectedDay} 精選短片</span>
-                    </div>
-                    <div className="text-[10px] text-biker-navy font-bold flex items-center space-x-0.5 mx-auto">
-                      <span>在手冊內直接播放</span>
-                    </div>
-                  </button>
-                )
+                </div>
               ) : (
                 /* Google Photos video type (original intermediate modal popup behaviour) */
                 <>
