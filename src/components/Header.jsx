@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bike, Utensils, Users, Bell, DollarSign, Compass, Film, Menu, X, MapPin, MessageSquare, Camera, BookOpen } from "lucide-react";
+import { Bike, Utensils, Users, Bell, DollarSign, Compass, Film, Menu, X, MapPin, MessageSquare, Camera, BookOpen, Award } from "lucide-react";
 
 export default function Header({ currentTab, setCurrentTab }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -12,6 +12,7 @@ export default function Header({ currentTab, setCurrentTab }) {
     { id: "media", label: "影像紀錄", icon: Camera },
     { id: "food-lodging", label: "住宿餐食", icon: Utensils },
     { id: "members", label: "成員", icon: Users },
+    { id: "certificates", label: "完騎證書", icon: Award },
     { id: "review", label: "2025回顧", icon: Film },
     { id: "reminders", label: "重要提醒", icon: Bell },
     { id: "cost", label: "費用整理", icon: DollarSign },

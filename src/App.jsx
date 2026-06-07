@@ -13,6 +13,7 @@ import ReflectionPage from "./pages/ReflectionPage";
 import MediaPage from "./pages/MediaPage";
 import Day1StoryPage from "./pages/Day1StoryPage";
 import Day1PdfPage from "./pages/Day1PdfPage";
+import CertificatesPage from "./pages/CertificatesPage";
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState("home");
@@ -78,6 +79,8 @@ export default function App() {
         return <FoodLodgingPage />;
       case "members":
         return <MembersPage />;
+      case "certificates":
+        return <CertificatesPage />;
       case "reminders":
         return <ReminderPage />;
       case "cost":
