@@ -67,3 +67,20 @@
     transform: scale(1);
   }
 }
+
+/* Premium Apple-style photo blur-in transition */
+.animate-image-fade-in {
+  animation: imageFadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes imageFadeIn {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+

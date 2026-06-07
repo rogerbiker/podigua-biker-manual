@@ -13,8 +13,9 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore Database with auto-detect long-polling to prevent WebSocket timeouts on mobile networks
+// Initialize Firestore Database with forced long polling to prevent WebSocket handshake delays on mobile networks
 export const db = initializeFirestore(app, {
-  experimentalAutoDetectLongPolling: true
+  forceLongPolling: true
 });
+
 
