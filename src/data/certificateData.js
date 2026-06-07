@@ -67,7 +67,7 @@ export const certificates = [
     certificateEn: "/images/certificates/sally-en.jpg",
     reflection: "感言整理中，敬請期待！✍️",
     reflectionDate: "2026-06-03",
-    highlight: "Roger 的夫人，陪同先生一起接受熟齡剖地瓜壯騎挑戰，首次參與即順利完成全程！"
+    highlight: "首次參加剖地瓜，騎乘態度健康積極，盡量跟上領騎節奏；身為 Roger 的夫人，也陪同先生一起接受熟齡剖地瓜壯騎挑戰，順利完成全程！"
   },
   {
     id: "pp-roger",
