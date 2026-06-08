@@ -1609,9 +1609,9 @@ export default function ReflectionPage() {
   });
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 pb-24 md:pb-12 fade-in">
+    <div className="max-w-3xl mx-auto px-4 py-4 md:py-6 pb-24 md:pb-12 fade-in">
       {/* Tab Switcher */}
-      <div className="flex bg-slate-100 p-1 rounded-xl mb-6 shadow-inner">
+      <div className="flex bg-slate-100 p-1 rounded-xl mb-4 md:mb-6 shadow-inner">
         <button
           onClick={() => setActiveTab("form")}
           className={`flex-1 text-center py-2.5 rounded-lg text-xs md:text-sm font-bold transition-all duration-150 cursor-pointer ${
@@ -1835,9 +1835,9 @@ export default function ReflectionPage() {
 
             {/* Step 2: Active Conversation View */}
             {chatStep === "chat" && (
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col overflow-hidden animate-zoom-in h-[500px]">
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col overflow-hidden animate-zoom-in h-[560px] md:h-[620px]">
                 {/* Chat Header */}
-                <div className="bg-slate-50 border-b border-slate-150/80 px-4 py-3 flex items-center justify-between">
+                <div className="bg-slate-50 border-b border-slate-150/80 px-4 py-2 flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <span className="font-black text-xs text-slate-700 bg-slate-200/60 px-2 py-0.5 rounded-md">
                       👤 {member}
@@ -1884,21 +1884,21 @@ export default function ReflectionPage() {
                 )}
 
                 {/* Messages Viewport */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/30">
+                <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-50/30">
                   {chatHistory.map((msg, idx) => (
                     <div
                       key={idx}
                       className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
                     >
                       <div
-                        className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed font-medium ${
+                        className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs md:text-sm leading-relaxed font-medium ${
                           msg.role === "user"
                             ? "bg-biker-navy text-white rounded-tr-none shadow-sm"
                             : "bg-white text-slate-700 border border-slate-200/80 rounded-tl-none shadow-xs"
                         }`}
                       >
                         {msg.role !== "user" && (
-                          <span className="block text-[10px] font-black text-biker-orange mb-1">
+                          <span className="block text-[9px] font-black text-biker-orange mb-0.5">
                             阿呆小秘書
                           </span>
                         )}
@@ -1937,7 +1937,7 @@ export default function ReflectionPage() {
 
                 {/* Bottom Input Area */}
                 {chatHistory.filter(m => m.role === 'user' && !checkCriticism(m.text)).length < 3 ? (
-                  <form onSubmit={handleSendMessage} className="border-t border-slate-100 p-4 bg-white space-y-3">
+                  <form onSubmit={handleSendMessage} className="border-t border-slate-100 p-3 bg-white space-y-2">
                     <div className="relative">
                       <textarea
                         value={currentInput}
@@ -1945,10 +1945,10 @@ export default function ReflectionPage() {
                           setCurrentInput(e.target.value);
                           // Auto-grow height helper with safety limit (max 180px) to prevent layout break
                           e.target.style.height = 'auto';
-                          e.target.style.height = `${Math.min(180, Math.max(120, e.target.scrollHeight))}px`;
+                          e.target.style.height = `${Math.min(180, Math.max(80, e.target.scrollHeight))}px`;
                         }}
                         placeholder={reflectionMode === "certificate" ? "請輸入或語音說說你的完騎感受..." : "請輸入或語音說說今天的心得..."}
-                        style={{ minHeight: "120px", maxHeight: "180px" }}
+                        style={{ minHeight: "80px", maxHeight: "180px" }}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 pb-12 text-xs md:text-sm text-slate-700 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-biker-navy/15 focus:bg-white transition-all leading-relaxed resize-none overflow-y-auto"
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
