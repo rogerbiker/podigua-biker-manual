@@ -1943,12 +1943,12 @@ export default function ReflectionPage() {
                         value={currentInput}
                         onChange={(e) => {
                           setCurrentInput(e.target.value);
-                          // Auto-grow height helper
+                          // Auto-grow height helper with safety limit (max 180px) to prevent layout break
                           e.target.style.height = 'auto';
-                          e.target.style.height = `${Math.max(120, e.target.scrollHeight)}px`;
+                          e.target.style.height = `${Math.min(180, Math.max(120, e.target.scrollHeight))}px`;
                         }}
                         placeholder={reflectionMode === "certificate" ? "請輸入或語音說說你的完騎感受..." : "請輸入或語音說說今天的心得..."}
-                        style={{ minHeight: "120px" }}
+                        style={{ minHeight: "120px", maxHeight: "180px" }}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 pb-12 text-xs md:text-sm text-slate-700 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-biker-navy/15 focus:bg-white transition-all leading-relaxed resize-none overflow-y-auto"
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
