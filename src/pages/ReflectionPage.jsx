@@ -727,6 +727,8 @@ export default function ReflectionPage() {
   // [NEW] Polished dual output for certificate reflections
   const [polishedReflectionShort, setPolishedReflectionShort] = useState("");
   const [polishedReflectionFull, setPolishedReflectionFull] = useState("");
+  const [isReflectionExpanded, setIsReflectionExpanded] = useState(false);
+  const [copyReflectionSuccess, setCopyReflectionSuccess] = useState(false);
   
   const [geminiApiKey, setGeminiApiKey] = useState(() => {
     if (typeof window === "undefined") return "";
@@ -2033,47 +2035,63 @@ export default function ReflectionPage() {
                     <CheckCircle2 className="w-6 h-6" />
                   </div>
                   <h3 className="text-base sm:text-lg font-black text-slate-800 tracking-tight">
-                    {reflectionMode === "certificate" ? "🎓 整理好的完騎感言手記" : "✨ 整理好的壯騎心得手記"}
+                    {reflectionMode === "certificate" ? "🎓 這是我的完騎感言" : "✨ 整理好的壯騎心得手記"}
                   </h3>
                   <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-sm mx-auto">
                     {reflectionMode === "certificate" 
-                      ? "阿呆已經把聊天的內容整理成適合放在證書卡片的短版感言與完整版囉！請在下方檢查或微調修改："
+                      ? "阿呆已經把您聊天的內容整理成一段有溫度的完騎感言囉！請在下方檢查或微調修改："
                       : "阿呆已經幫你把聊天的內容精煉成一段好故事囉！請在下方檢查或微調修改："}
                   </p>
                 </div>
 
                 {reflectionMode === "certificate" ? (
-                  <div className="space-y-4">
-                    {/* Short Reflection Textarea (100-160 words) */}
+                  <div className="space-y-3">
+                    {/* Full Reflection Textarea (200-350 words) with Expandable View */}
                     <div className="space-y-2">
                       <label className="block text-xs font-bold text-slate-500 flex justify-between">
-                        <span>🎓 證書卡片感言 (短版，建議 100 - 160 字)</span>
-                        <span className={polishedReflectionShort.length >= 100 && polishedReflectionShort.length <= 160 ? "text-green-600 font-bold" : "text-amber-600 font-bold"}>
-                          目前字數：{polishedReflectionShort.length} 字
-                        </span>
-                      </label>
-                      <textarea
-                        rows={4}
-                        value={polishedReflectionShort}
-                        onChange={(e) => setPolishedReflectionShort(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 leading-relaxed font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-biker-navy/15 focus:bg-white transition-all resize-y"
-                      />
-                    </div>
-
-                    {/* Full Reflection Textarea (200-350 words) */}
-                    <div className="space-y-2">
-                      <label className="block text-xs font-bold text-slate-500 flex justify-between">
-                        <span>📜 完整版完騎感言 (長版，建議 200 - 350 字，未來展開閱讀使用)</span>
+                        <span>📜 完騎感言內容</span>
                         <span className={polishedReflectionFull.length >= 200 && polishedReflectionFull.length <= 350 ? "text-green-600 font-bold" : "text-amber-600 font-bold"}>
                           目前字數：{polishedReflectionFull.length} 字
                         </span>
                       </label>
                       <textarea
-                        rows={6}
+                        rows={isReflectionExpanded ? 12 : 4}
                         value={polishedReflectionFull}
                         onChange={(e) => setPolishedReflectionFull(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 leading-relaxed font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-biker-navy/15 focus:bg-white transition-all resize-y"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 leading-relaxed font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-biker-navy/15 focus:bg-white transition-all resize-none overflow-y-auto"
+                        style={{ height: isReflectionExpanded ? "260px" : "100px" }}
                       />
+                    </div>
+                    
+                    {/* Actions Row */}
+                    <div className="flex items-center justify-between px-1">
+                      <button
+                        type="button"
+                        onClick={() => setIsReflectionExpanded(!isReflectionExpanded)}
+                        className="text-xs font-black text-biker-navy hover:text-biker-orange transition-all flex items-center space-x-1 cursor-pointer"
+                      >
+                        {isReflectionExpanded ? (
+                          <span>收合感言 ↩</span>
+                        ) : (
+                          <span>閱讀全文 📖</span>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(polishedReflectionFull);
+                          setCopyReflectionSuccess(true);
+                          setTimeout(() => setCopyReflectionSuccess(false), 2000);
+                        }}
+                        className="text-xs font-black text-biker-navy hover:text-biker-orange transition-all flex items-center space-x-1 cursor-pointer"
+                      >
+                        {copyReflectionSuccess ? (
+                          <span className="text-green-600 font-bold">✓ 已複製感言</span>
+                        ) : (
+                          <span>📋 複製感言</span>
+                        )}
+                      </button>
                     </div>
                   </div>
                 ) : (
