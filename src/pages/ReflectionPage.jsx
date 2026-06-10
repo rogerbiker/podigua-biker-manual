@@ -1664,22 +1664,26 @@ export default function ReflectionPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  resetForm();
-                }}
-                className="bg-biker-orange hover:bg-biker-orange-dark text-white font-bold py-2.5 px-6 rounded-xl text-xs shadow-sm transition-all active:scale-95 cursor-pointer"
-              >
-                繼續填寫下一筆 ✍️
-              </button>
+              {reflectionMode !== "certificate" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetForm();
+                  }}
+                  className="bg-biker-orange hover:bg-biker-orange-dark text-white font-bold py-2.5 px-6 rounded-xl text-xs shadow-sm transition-all active:scale-95 cursor-pointer"
+                >
+                  繼續填寫下一筆 ✍️
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {
                   resetForm();
                   setActiveTab("viewer");
                 }}
-                className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-6 rounded-xl text-xs transition-all active:scale-95 cursor-pointer"
+                className={reflectionMode === "certificate"
+                  ? "bg-biker-orange hover:bg-biker-orange-dark text-white font-bold py-2.5 px-6 rounded-xl text-xs shadow-sm transition-all active:scale-95 cursor-pointer"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-6 rounded-xl text-xs transition-all active:scale-95 cursor-pointer"}
               >
                 查看紀錄中心 📊
               </button>
@@ -1869,7 +1873,7 @@ export default function ReflectionPage() {
                   <div className="text-[9px] font-black tracking-tight">
                     {!isUsingSimulator ? (
                       <span className="text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded animate-pulse">
-                        🤖 Gemini 串接中
+                        🤖 AI 連線中
                       </span>
                     ) : (
                       <span className="text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
@@ -1881,7 +1885,7 @@ export default function ReflectionPage() {
                 
                 {isUsingSimulator && (
                   <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-[10px] font-bold text-amber-800 flex items-center space-x-1.5 select-none">
-                    <span>⚠️ 備援模式已啟動：目前正使用「本地智慧模擬器」，非真實 Gemini AI。請確認 Vercel 設定或網路狀態。</span>
+                    <span>⚠️ 備援模式已啟動：目前正使用「本地智慧模擬器」，非真實 AI。請確認 Vercel 設定或網路狀態。</span>
                   </div>
                 )}
 
@@ -1901,7 +1905,7 @@ export default function ReflectionPage() {
                       >
                         {msg.role !== "user" && (
                           <span className="block text-[9px] font-black text-biker-orange mb-0.5">
-                            阿呆小秘書
+                            AI小編
                           </span>
                         )}
                         <p className="whitespace-pre-wrap select-text">{msg.text}</p>
@@ -1916,7 +1920,7 @@ export default function ReflectionPage() {
                         <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                         <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                         <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                        <span className="pl-1">阿呆正在細心聆聽並思考中...</span>
+                        <span className="pl-1">AI正在細心聆聽並思考中...</span>
                       </div>
                     </div>
                   )}
@@ -1991,8 +1995,8 @@ export default function ReflectionPage() {
                   <div className="border-t border-slate-100 p-6 bg-slate-50 text-center space-y-3">
                     <p className="text-xs text-slate-500 font-bold">
                       {reflectionMode === "certificate" 
-                        ? "阿呆已記錄下您深刻的完騎心聲，請點擊下方按鈕產出完騎感言！" 
-                        : "阿呆已記錄下您豐富的騎乘點滴，請點擊下方按鈕產出完整手記！"}
+                        ? "AI小編已記錄下您深刻的完騎心聲，請點擊下方按鈕產出完騎感言！" 
+                        : "AI小編已記錄下您豐富的騎乘點滴，請點擊下方按鈕產出完整手記！"}
                     </p>
                     <div className="flex justify-center animate-bounce-slow">
                       <button
@@ -2027,7 +2031,7 @@ export default function ReflectionPage() {
               <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6 animate-zoom-in">
                 {isUsingSimulator && (
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[10px] font-bold text-amber-800 flex items-center space-x-1.5 select-none">
-                    <span>⚠️ 備援模式已啟動：目前心得內容由「本地智慧模擬器」生成，非真實 Gemini AI。</span>
+                    <span>⚠️ 備援模式已啟動：目前心得內容由「本地智慧模擬器」生成，非真實 AI。</span>
                   </div>
                 )}
                 <div className="text-center space-y-1">
@@ -2039,8 +2043,8 @@ export default function ReflectionPage() {
                   </h3>
                   <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-sm mx-auto">
                     {reflectionMode === "certificate" 
-                      ? "阿呆已經把您聊天的內容整理成一段有溫度的完騎感言囉！請在下方檢查或微調修改："
-                      : "阿呆已經幫你把聊天的內容精煉成一段好故事囉！請在下方檢查或微調修改："}
+                      ? "AI小編已經把您聊天的內容整理成一段有溫度的完騎感言囉！請在下方檢查或微調修改："
+                      : "AI小編已經幫你把聊天的內容精煉成一段好故事囉！請在下方檢查或微調修改："}
                   </p>
                 </div>
 
@@ -2249,7 +2253,7 @@ export default function ReflectionPage() {
                     <span>💡 腦袋空空？單車小秘書的靈感提示 🪄</span>
                   </h4>
                   <p className="text-[10px] text-slate-500 font-medium leading-relaxed bg-white/50 p-2 rounded-lg border border-slate-200/30">
-                    🚴‍♂️ <b>阿呆碎碎唸</b>：大腿又酸又脹？風太大被吹成瘋子？今天這段路，有沒有想吐槽的事、想記錄的畫面，或想大聲感謝的隊友？挑一兩個有感覺的寫在下面框框就好囉！（不用像寫考卷一樣每題都答）
+                    🚴‍♂️ <b>AI小編碎碎唸</b>：大腿又酸又脹？風太大被吹成瘋子？今天這段路，有沒有想吐槽的事、想記錄的畫面，或想大聲感謝的隊友？挑一兩個有感覺的寫在下面框框就好囉！（不用像寫考卷一樣每題都答）
                   </p>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[10px] text-slate-500">
@@ -2582,7 +2586,7 @@ export default function ReflectionPage() {
                                   {sub.chatHistory.map((chat, idx) => (
                                     <div key={idx} className="text-[11px] leading-relaxed">
                                       <span className={`inline-block font-bold mr-1.5 ${chat.role === 'user' ? 'text-biker-navy' : 'text-biker-orange'}`}>
-                                        {chat.role === 'user' ? '👤 隊友：' : '🤖 阿呆：'}
+                                        {chat.role === 'user' ? '👤 隊友：' : '🤖 AI小編：'}
                                       </span>
                                       <span className="text-slate-700 font-medium select-text">{chat.text}</span>
                                     </div>
@@ -2620,7 +2624,7 @@ export default function ReflectionPage() {
                                   {sub.chatHistory.map((chat, idx) => (
                                     <div key={idx} className="text-[11px] leading-relaxed">
                                       <span className={`inline-block font-bold mr-1.5 \${chat.role === 'user' ? 'text-biker-navy' : 'text-biker-orange'}`}>
-                                        {chat.role === 'user' ? '👤 隊友：' : '🤖 阿呆：'}
+                                        {chat.role === 'user' ? '👤 隊友：' : '🤖 AI小編：'}
                                       </span>
                                       <span className="text-slate-700 font-medium select-text">{chat.text}</span>
                                     </div>
