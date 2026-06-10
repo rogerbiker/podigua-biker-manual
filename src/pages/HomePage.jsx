@@ -60,7 +60,7 @@ export default function HomePage({ setCurrentTab }) {
     <div className="fade-in w-full">
       {/* 首頁 Hero 區塊：融入水彩山海背景，橫式延展，無框線無陰影以自然銜接下方證書 */}
       <div 
-        className="relative w-full text-center flex flex-col items-center justify-start pt-8 pb-14 md:pt-14 md:pb-24 bg-[size:100%_auto] md:bg-cover bg-bottom bg-no-repeat bg-white"
+        className="relative w-full text-center flex flex-col items-center justify-start pt-8 pb-14 md:pt-14 md:pb-24 bg-[size:100%_auto] md:bg-cover bg-bottom md:bg-[position:center_30%] bg-no-repeat bg-white"
         style={{ 
           backgroundImage: `url(${import.meta.env.BASE_URL}images/hero/landscape-bg.jpg)`,
         }}
