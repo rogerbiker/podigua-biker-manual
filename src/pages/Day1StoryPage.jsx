@@ -1,4 +1,4 @@
-import { ArrowLeft, Download, FileText, ExternalLink, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Download, FileText, ExternalLink } from "lucide-react";
 
 export default function Day1StoryPage({ setCurrentTab }) {
   const totalPages = 10;

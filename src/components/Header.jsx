@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bike, Utensils, Users, Bell, DollarSign, Compass, Film, Menu, X, MapPin, MessageSquare, Camera, BookOpen, Award } from "lucide-react";
+import { Bike, Utensils, Users, Bell, DollarSign, Compass, Film, Menu, X, MessageSquare, Camera, BookOpen, Award } from "lucide-react";
 
 export default function Header({ currentTab, setCurrentTab }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

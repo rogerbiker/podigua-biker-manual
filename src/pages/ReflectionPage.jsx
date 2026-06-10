@@ -183,7 +183,7 @@ const generateSimulatorClosing = (profile, userText, day) => {
 };
 
 // Local Simulator closing question feedback (to generate the confirmation question in simulator mode)
-const generateSimulatorClosingQuestion = (profile, userText, day) => {
+const generateSimulatorClosingQuestion = (profile) => {
   const name = profile.displayName;
   const honorific = profile.honorific || "大哥/姐";
   const prefix = `${name}${honorific}，`;
@@ -213,7 +213,7 @@ const getSystemInstructionForCertificateReflectionFollowUp = (profile, messageCo
 【你的對話任務與規則】
 1. 你正在與成員進行溫馨的交談，請以語氣親近、有默契的方式對話，像老隊友或溫馨的小秘書。這不是問卷，而是「交談式陪伴」。
 2. 第一題已經發問（「回顧這次 2026 熟齡剖地瓜壯騎，你現在最想留下的一句話或一段感受是什麼？」），成員剛才給出了第一輪回答。
-3. 這是第 \${messageCount} 輪回答。
+3. 這是第 ${messageCount} 輪回答。
    - 【若是第 1 次回答後（即你現在要提問第 2 題）】：
      請仔細分析成員的回答，並根據他的回答偏向進行【一個溫和自然且精準的追問問題】：
      * 若回答偏辛苦（提及累、酸、撐、坡度等挑戰），追問他是如何撐過挑戰，在快要放棄或最痛苦的片刻是想到什麼或誰給了他力量。
@@ -381,34 +381,34 @@ const parseCertificateReflection = (rawText) => {
 const generateCertificateReflectionSimulatorFollowUp = (profile, userText, history) => {
   const name = profile.displayName;
   const honorific = profile.honorific || "大哥/姐";
-  const prefix = `\${name}\${honorific}，`;
+  const prefix = `${name}${honorific}，`;
   const userMessageCount = history.filter(m => m.role === 'user' && !checkCriticism(m.text)).length;
   
   if (userMessageCount === 1) {
     const text = userText.toLowerCase();
     if (text.includes("累") || text.includes("酸") || text.includes("辛苦") || text.includes("坡") || text.includes("挑戰") || text.includes("撐")) {
-      return `\${prefix}聽得出來這趟縱貫台灣的挑戰在體能與意志力上真的非常吃緊，尤其是那些爬坡路段。回想起那段您覺得最累、甚至想著放棄的片刻，當時是憑著什麼信念，或者是哪位隊友的一句加油，讓您咬緊牙關繼續踩下去的？`;
+      return `${prefix}聽得出來這趟縱貫台灣的挑戰在體能與意志力上真的非常吃緊，尤其是那些爬坡路段。回想起那段您覺得最累、甚至想著放棄的片刻，當時是憑著什麼信念，或者是哪位隊友的一句加油，讓您咬緊牙關繼續踩下去的？`;
     }
     if (text.includes("謝") || text.includes("感激") || text.includes("隊友") || text.includes("團隊") || text.includes("大家")) {
-      return `\${prefix}這就是我們剖地瓜最珍貴的革命情感！大家在路上互相破風、互相打氣，真的讓人充滿力氣。回想這 8 天的朝夕相處，有沒有哪一個隊友互助的畫面，是您覺得最溫馨、現在想起來仍會暖心的？`;
+      return `${prefix}這就是我們剖地瓜最珍貴的革命情感！大家在路上互相破風、互相打氣，真的讓人充滿力氣。回想這 8 天的朝夕相處，有沒有哪一個隊友互助的畫面，是您覺得最溫馨、現在想起來仍會暖心的？`;
     }
     if (text.includes("開心") || text.includes("快樂") || text.includes("好玩") || text.includes("笑") || text.includes("歌") || text.includes("啤酒")) {
-      return `\${prefix}哈哈！騎完車大家坐在一起開瓶啤酒、隨性開玩笑，真的是洗去整天疲憊的最佳良藥！在這段壯騎的旅程中，有沒有哪一個好玩、好笑，或是讓您覺得最快樂的瞬間？`;
+      return `${prefix}哈哈！騎完車大家坐在一起開瓶啤酒、隨性開玩笑，真的是洗去整天疲憊的最佳良藥！在這段壯騎的旅程中，有沒有哪一個好玩、好笑，或是讓您覺得最快樂的瞬間？`;
     }
     if (text.includes("證書") || text.includes("完成") || text.includes("完騎") || text.includes("驕傲")) {
-      return `\${prefix}這張完騎證書真的實至名歸，見證了您踩過風雨和山嶺的堅持！對您而言，這張證書象徵著什麼樣的成就？回頭看看第一天出發的自己，此時您最想對自己說些什麼？`;
+      return `${prefix}這張完騎證書真的實至名歸，見證了您踩過風雨和山嶺的堅持！對您而言，這張證書象徵著什麼樣的成就？回頭看看第一天出發的自己，此時您最想對自己說些什麼？`;
     }
-    return `\${prefix}回想起這 8 天的縱貫挑戰，真的經歷了好多好多。如果此時請您回想，最先浮現在您腦海裡的是哪一個畫面、風景，或是與誰在一起的深刻片刻？`;
+    return `${prefix}回想起這 8 天的縱貫挑戰，真的經歷了好多好多。如果此時請您回想，最先浮現在您腦海裡的是哪一個畫面、風景，或是與誰在一起的深刻片刻？`;
   }
   
   if (userMessageCount === 2) {
     if (userText.length < 10) {
-      return `\${prefix}這段感受雖然簡短，但聽得出來非常有感觸。能不能再為我多分享一個畫面或細節？例如當時身旁有誰，或者當時路上的風景是怎樣的？這會讓我們稍後的感言更有故事喔！`;
+      return `${prefix}這段感受雖然簡短，但聽得出來非常有感觸。能不能再為我多分享一個畫面或細節？例如當時身旁有誰，或者當時路上的風景是怎樣的？這會讓我們稍後的感言更有故事喔！`;
     }
-    return `\${prefix}您分享的心境真的很棒，充滿了靈魂與情感。這些回憶我們都已經收錄了，請點擊下方的「幫我整理完騎感言」按鈕，我會為您整理出短版與完整版的感言手記！`;
+    return `${prefix}您分享的心境真的很棒，充滿了靈魂與情感。這些回憶我們都已經收錄了，請點擊下方的「幫我整理完騎感言」按鈕，我會為您整理出短版與完整版的感言手記！`;
   }
   
-  return `\${prefix}太棒了，有這些細節，我們的回顧就非常生動且完整了。請點擊下方的「幫我整理完騎感言」按鈕，我這就為您生成專屬的一長一短感言！`;
+  return `${prefix}太棒了，有這些細節，我們的回顧就非常生動且完整了。請點擊下方的「幫我整理完騎感言」按鈕，我這就為您生成專屬的一長一短感言！`;
 };
 
 // Local Smart Simulator polish compiler for certificate reflection mode
@@ -421,32 +421,32 @@ const generateCertificateReflectionSimulatorPolish = (profile, chatHistory) => {
   const ans2 = userAnswers[1] || "";
   const ans3 = userAnswers[2] || "";
   
-  let reflectionShort = "";
-  let reflectionFull = "";
-  
-  switch(profile.id) {
-    case "roger":
-      reflectionShort = "這是一趟考驗意志力的壯行。身為媒體組長與騎士，能和 Sally 攜手參與並記錄大家奮戰的畫面，是我最大的榮幸。這張證書是我們共同的革命情感。";
-      reflectionFull = "回顧這次 2026 熟齡剖地瓜壯騎，這是一趟考驗意志力與體能極限的挑戰。我最想留下的話是：這份完騎證書是我們每個人一生的榮耀與回憶！在過程中，我不僅要專注於自己的踩踏，更作為媒體組長負責影像紀錄與每日短影片製作，努力用鏡頭捕捉大夥的每一份堅持。對我來說，最珍貴的是能與夫人 Sally 攜手前行，並在風雨中體會到扶輪社友間無價的默契與革命情感。這些數位回憶，將永遠烙印在我們心中。";
-      break;
-    case "sally":
-      reflectionShort = "第一次參加剖地瓜，過程雖然辛苦，但能跟 Roger 及隊友並肩作戰、跟上山神的節奏，讓我看見了自己的堅強。順利完騎，真的很棒！";
-      reflectionFull = "這是我第一次參加剖地瓜壯騎，對我而言是一場全新的新鮮體驗與挑戰。一路上，我一直努力調整呼吸與節奏，緊跟在領騎山神的後面。過程雖然疲累，但有先生 Roger 的陪伴，以及全體隊友的鼓勵，給了我克服挑戰的無比勇氣。這次完騎證明了只要堅持，自己比想像中更堅強。這張證書是我生命中非常珍貴的勳章！";
-      break;
-    case "pp-pure":
-      reflectionShort = "以 80 歲的高齡完成縱貫台灣，靠的是大家一路的照應與加油。能與這群好朋友共享這份榮耀，是我人生最大的快樂與不老證明！";
-      reflectionFull = "回顧這次 2026 熟齡剖地瓜壯騎，我最想留下的一句話是：堅持到底，永不服老！以八十歲的年紀再次挑戰自我，老實說體力上確實很吃緊。但是一路上有著 Volvo 團長與眾多好社友的不斷關心與陪伴破風，讓我能安穩完成每一步。這張證書對我而言不只是一張紙，更是大家溫慢且堅定支持的成果，也是我不老生命力的最佳證明。";
-      break;
-    default:
-      reflectionShort = "完成了 8 天縱貫台灣的挑戰，這張證書代表著我們的堅持與不放棄。感謝一路上互相扶持的隊友，這份革命情感會永遠留存。";
-      reflectionFull = "回顧這次 2026 熟齡剖地瓜壯騎，這是一段無與倫比的旅程。出發前的心情是既期待又怕受傷害，但當大家並肩踩上踏板、迎著風雨互相照應時，所有的疲累都化成了前進的力量。這張完騎證書，是我們每個人用意志力與汗水換來的榮耀，也見證了車隊夥伴間深厚的革命情感。謝謝大家的照應，我們終於一起完成了這趟壯舉！";
-      break;
-  }
+  let reflectionShort;
+  let reflectionFull;
   
   if (ans1) {
     const cleanAns1 = ans1.replace(/[。，]/g, " ");
     reflectionShort = `完成縱貫台灣對我意義非凡。${cleanAns1.substring(0, 50)}。這張證書記錄了我的汗水與堅持，更感謝路上隊友間溫馨照應的革命情感！`;
     reflectionFull = `回顧這次 2026 熟齡剖地瓜壯騎，最想留下的心聲是：${ans1}。在騎乘中，${ans2 || "大家一路互相幫忙擋風破風、支援車及時遞上香蕉補給，真的非常有愛"}。${ans3 ? ("對我而言，" + ans3) : ""}這份完騎證書是意志力的實證，也是所有人並肩作戰的結晶，是此生最難忘的革命回憶！`;
+  } else {
+    switch(profile.id) {
+      case "roger":
+        reflectionShort = "這是一趟考驗意志力的壯行。身為媒體組長與騎士，能和 Sally 攜手參與並記錄大家奮戰的畫面，是我最大的榮幸。這張證書是我們共同的革命情感。";
+        reflectionFull = "回顧這次 2026 熟齡剖地瓜壯騎，這是一趟考驗意志力與體能極限的挑戰。我最想留下的話是：這份完騎證書是我們每個人一生的榮耀與回憶！在過程中，我不僅要專注於自己的踩踏，更作為媒體組長負責影像紀錄與每日短影片製作，努力用鏡頭捕捉大夥的每一份堅持。對我來說，最珍貴的是能與夫人 Sally 攜手前行，並在風雨中體會到扶輪社友間無價的默契與革命情感。這些數位回憶，將永遠烙印在我們心中。";
+        break;
+      case "sally":
+        reflectionShort = "第一次參加剖地瓜，過程雖然辛苦，但能跟 Roger 及隊友並肩作戰、跟上山神的節奏，讓我看見了自己的堅強。順利完騎，真的很棒！";
+        reflectionFull = "這是我第一次參加剖地瓜壯騎，對我而言是一場全新的新鮮體驗與挑戰。一路上，我一直努力調整呼吸與節奏，緊跟在領騎山神的後面。過程雖然疲累，但有先生 Roger 的陪伴，以及全體隊友的鼓勵，給了我克服挑戰的無比勇氣。這次完騎證明了只要堅持，自己比想像中更堅強。這張證書是我生命中非常珍貴的勳章！";
+        break;
+      case "pp-pure":
+        reflectionShort = "以 80 歲的高齡完成縱貫台灣，靠的是大家一路的照應與加油。能與這群好朋友共享這份榮耀，是我人生最大的快樂與不老證明！";
+        reflectionFull = "回顧這次 2026 熟齡剖地瓜壯騎，我最想留下的一句話是：堅持到底，永不服老！以八十歲的年紀再次挑戰自我，老實說體力上確實很吃緊。但是一路上有著 Volvo 團長與眾多好社友的不斷關心與陪伴破風，讓我能安穩完成每一步。這張證書對我而言不只是一張紙，更是大家溫慢且堅定支持的成果，也是我不老生命力的最佳證明。";
+        break;
+      default:
+        reflectionShort = "完成了 8 天縱貫台灣的挑戰，這張證書代表著我們的堅持與不放棄。感謝一路上互相扶持的隊友，這份革命情感會永遠留存。";
+        reflectionFull = "回顧這次 2026 熟齡剖地瓜壯騎，這是一段無與倫比的旅程。出發前的心情是既期待又怕受傷害，但當大家並肩踩上踏板、迎著風雨互相照應時，所有的疲累都化成了前進的力量。這張完騎證書，是我們每個人用意志力與汗水換來的榮耀，也見證了車隊夥伴間深厚的革命情感。謝謝大家的照應，我們終於一起完成了這趟壯舉！";
+        break;
+    }
   }
   
   return `[SHORT]
@@ -704,9 +704,12 @@ export default function ReflectionPage() {
   // Check if current user is admin/dev or beta tester to see the diagnostics section
   const [isAdminMode, setIsAdminMode] = useState(() => {
     if (typeof window === "undefined") return false;
-    const params = new URLSearchParams(window.location.search);
-    return params.has("admin") || params.has("debug") || params.has("beta") ||
-           window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    if (isLocal) {
+      const params = new URLSearchParams(window.location.search);
+      return params.has("admin") || params.has("debug") || params.has("beta");
+    }
+    return false;
   });
 
   // Form State
@@ -994,7 +997,7 @@ export default function ReflectionPage() {
             setIsUsingSimulator(false);
           } catch (apiErr) {
             console.error("⚠️ [WARNING] Gemini API failed, falling back to Local Rule-Based Simulator.", apiErr);
-            replyText = generateSimulatorClosingQuestion(profile, userText, day);
+            replyText = generateSimulatorClosingQuestion(profile);
             setIsUsingSimulator(true);
           }
           
@@ -3064,8 +3067,19 @@ service cloud.firestore {
           <button 
             type="button"
             onClick={() => {
-              setIsAdminMode(true);
-              setDiagnosticsOpen(true);
+              const isLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+              if (isLocal) {
+                setIsAdminMode(true);
+                setDiagnosticsOpen(true);
+              } else {
+                const pass = window.prompt("🛠️ 請輸入管理密碼以開啟管理診斷區：");
+                if (pass === "podigua2026") {
+                  setIsAdminMode(true);
+                  setDiagnosticsOpen(true);
+                } else if (pass !== null) {
+                  window.alert("❌ 密碼錯誤，拒絕開啟！");
+                }
+              }
             }}
             className="text-slate-300 hover:text-slate-500 transition-colors cursor-pointer p-2"
             title="系統設定"

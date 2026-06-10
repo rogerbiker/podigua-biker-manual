@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { certificates } from "../data/certificateData";
-import { Award, Globe, X, Eye, FileText, ChevronRight } from "lucide-react";
+import { Award, Globe, X, ChevronRight } from "lucide-react";
 
 // Image display wrapper with beautiful CSS fallback for missing or loading images
 function CertificateThumb({ src, name, onClick }) {

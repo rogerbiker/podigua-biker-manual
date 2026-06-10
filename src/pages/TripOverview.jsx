@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { tripDays } from "../data/tripData";
 import DayCard from "../components/DayCard";
-import { FileText } from "lucide-react";
 
-export default function TripOverview({ selectedDayId, setCurrentTab }) {
+export default function TripOverview({ selectedDayId }) {
   // Store expanded state for each day
   const [expandedDays, setExpandedDays] = useState({});
   const [prevSelectedDayId, setPrevSelectedDayId] = useState(null);
@@ -80,7 +79,6 @@ export default function TripOverview({ selectedDayId, setCurrentTab }) {
             dayData={dayData}
             isExpanded={!!expandedDays[dayData.day]}
             onToggle={() => handleToggleDay(dayData.day)}
-            setCurrentTab={setCurrentTab}
           />
         ))}
       </div>

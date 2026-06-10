@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { members } from "../data/tripData";
-import { Shield, Heart, Users, Truck, X } from "lucide-react";
+import { X } from "lucide-react";
 
 // Helper component to display member avatar with dynamic image loading error fallback
 const MemberAvatar = ({ name, photoUrl, fallbackText, sizeClass = "w-20 h-20", isCircle = false, onClick }) => {

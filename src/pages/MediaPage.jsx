@@ -51,10 +51,14 @@ export default function MediaPage({ initialView = "all" }) {
   // Admin Mode detection
   const [isAdminMode, setIsAdminMode] = useState(() => {
     if (typeof window === "undefined") return false;
-    const params = new URLSearchParams(window.location.search);
-    return params.has("admin") || params.has("debug") || params.has("beta") ||
-           window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ||
-           localStorage.getItem("podigua_admin_mode") === "true";
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    if (isLocal) {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("admin") || params.has("debug") || params.has("beta")) {
+        return true;
+      }
+    }
+    return localStorage.getItem("podigua_admin_mode") === "true";
   });
 
   // Admin password states
@@ -78,9 +82,6 @@ export default function MediaPage({ initialView = "all" }) {
   // Video intermediate modal states (Roger UX design)
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [modalVideo, setModalVideo] = useState(null);
-
-  // Video play state for inline player
-  const [isPlayerActive, setIsPlayerActive] = useState(false);
 
   // Fullscreen states
   const [isWebFullscreen, setIsWebFullscreen] = useState(false);
@@ -163,9 +164,6 @@ export default function MediaPage({ initialView = "all" }) {
       }
     }
   };
-
-  // Thumbnail loading failure fallback state
-  const [thumbnailFailed, setThumbnailFailed] = useState(false);
 
   // Video links states (Roger inputs)
   const [videoUrlInput, setVideoUrlInput] = useState("");
@@ -266,12 +264,6 @@ export default function MediaPage({ initialView = "all" }) {
     setVideoUrlInput(video?.url || "");
   }, [selectedDay, video?.url]);
 
-  useEffect(() => {
-    Promise.resolve().then(() => {
-      setIsPlayerActive(false);
-      setThumbnailFailed(false);
-    });
-  }, [selectedDay]);
 
   // Verify Admin Password
   const handleVerifyPassword = (e) => {
@@ -317,7 +309,7 @@ export default function MediaPage({ initialView = "all" }) {
     try {
       new URL(url);
       return url.startsWith("http://") || url.startsWith("https://");
-    } catch (_) {
+    } catch {
       return false;
     }
   };

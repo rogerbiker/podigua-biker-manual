@@ -1,7 +1,7 @@
-import { Navigation, MapPin, ChevronDown, ChevronUp, AlertTriangle, FileText } from "lucide-react";
+import { Navigation, MapPin, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
 import DayDetail from "./DayDetail";
 
-export default function DayCard({ dayData, isExpanded, onToggle, setCurrentTab }) {
+export default function DayCard({ dayData, isExpanded, onToggle }) {
   const {
     day,
     date,

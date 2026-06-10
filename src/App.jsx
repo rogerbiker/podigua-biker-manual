@@ -18,30 +18,11 @@ import CertificatesPage from "./pages/CertificatesPage";
 export default function App() {
   const [currentTab, setCurrentTab] = useState("home");
   const [selectedDayId, setSelectedDayId] = useState(null);
-
+  
   // Automatically scroll to the top of the page when changing tabs
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentTab]);
-
-  // Check and persist stage 2 beta flag (enable on beta/admin/debug params or localhost)
-  const [isBeta] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const params = new URLSearchParams(window.location.search);
-    const urlBeta = params.get("beta");
-    const urlAdmin = params.get("admin");
-    const urlDebug = params.get("debug");
-    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-
-    if (urlBeta === "true" || urlAdmin === "true" || urlDebug === "true" || isLocal) {
-      localStorage.setItem("stage2_beta", "true");
-      return true;
-    } else if (urlBeta === "false") {
-      localStorage.removeItem("stage2_beta");
-      return false;
-    }
-    return localStorage.getItem("stage2_beta") === "true";
-  });
 
   // Helper to change page and optionally target a day
   const handleSelectDay = (dayId) => {
@@ -95,7 +76,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       {/* Header for desktop navigation */}
-      <Header currentTab={currentTab} setCurrentTab={setCurrentTab} isBeta={isBeta} />
+      <Header currentTab={currentTab} setCurrentTab={setCurrentTab} />
 
       {/* Main content container */}
       <main className="flex-1 max-w-6xl w-full mx-auto pb-16 md:pb-6">
@@ -107,7 +88,6 @@ export default function App() {
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
         onSelectDay={handleSelectDay}
-        isBeta={isBeta}
       />
     </div>
   );
