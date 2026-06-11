@@ -731,7 +731,6 @@ export default function ReflectionPage() {
   const [polishedReflectionShort, setPolishedReflectionShort] = useState("");
   const [polishedReflectionFull, setPolishedReflectionFull] = useState("");
   const [isReflectionExpanded, setIsReflectionExpanded] = useState(false);
-  const [copyReflectionSuccess, setCopyReflectionSuccess] = useState(false);
   
   const [geminiApiKey, setGeminiApiKey] = useState(() => {
     if (typeof window === "undefined") return "";
@@ -1910,7 +1909,7 @@ export default function ReflectionPage() {
 
             {/* Step 2: Active Conversation View */}
             {chatStep === "chat" && (
-              <div ref={chatContainerRef} className="bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col overflow-hidden animate-zoom-in h-[560px] md:h-[620px]">
+              <div ref={chatContainerRef} className="bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col overflow-hidden animate-zoom-in max-h-[560px] md:max-h-[620px]">
                 {/* Chat Header */}
                 <div className="bg-slate-50 border-b border-slate-150/80 px-4 py-2 flex items-center justify-between">
                   <div className="flex items-center space-x-2">
@@ -1966,10 +1965,10 @@ export default function ReflectionPage() {
                       className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
                     >
                       <div
-                        className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs md:text-sm leading-relaxed font-medium ${
+                        className={`max-w-[85%] rounded-2xl px-3.5 py-2 leading-relaxed font-medium ${
                           msg.role === "user"
-                            ? "bg-biker-navy text-white rounded-tr-none shadow-sm"
-                            : "bg-white text-slate-700 border border-slate-200/80 rounded-tl-none shadow-xs"
+                            ? "bg-biker-navy text-white rounded-tr-none shadow-sm text-xs md:text-sm"
+                            : "bg-white text-slate-700 border border-slate-200/80 rounded-tl-none shadow-xs text-base"
                         }`}
                       >
                         {msg.role !== "user" && (
@@ -1985,7 +1984,7 @@ export default function ReflectionPage() {
                   {/* AI Generating Typing Indicator */}
                   {isAiGenerating && (
                     <div className="flex justify-start animate-pulse">
-                      <div className="max-w-[85%] bg-white border border-slate-200 rounded-2xl rounded-tl-none px-4 py-3 text-xs text-slate-400 font-bold flex items-center space-x-1.5 shadow-xs">
+                      <div className="max-w-[85%] bg-white border border-slate-200 rounded-2xl rounded-tl-none px-4 py-3 text-sm text-slate-400 font-bold flex items-center space-x-1.5 shadow-xs">
                         <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                         <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                         <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
@@ -2158,7 +2157,7 @@ export default function ReflectionPage() {
                     </div>
                     
                     {/* Actions Row */}
-                    <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center justify-start px-1">
                       <button
                         type="button"
                         onClick={() => setIsReflectionExpanded(!isReflectionExpanded)}
@@ -2168,22 +2167,6 @@ export default function ReflectionPage() {
                           <span>收合感言 ↩</span>
                         ) : (
                           <span>閱讀全文 📖</span>
-                        )}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(polishedReflectionFull);
-                          setCopyReflectionSuccess(true);
-                          setTimeout(() => setCopyReflectionSuccess(false), 2000);
-                        }}
-                        className="text-xs font-black text-biker-navy hover:text-biker-orange transition-all flex items-center space-x-1 cursor-pointer"
-                      >
-                        {copyReflectionSuccess ? (
-                          <span className="text-green-600 font-bold">✓ 已複製感言</span>
-                        ) : (
-                          <span>📋 複製感言</span>
                         )}
                       </button>
                     </div>
@@ -2581,14 +2564,18 @@ export default function ReflectionPage() {
                           <Users className="w-3 h-3" />
                           <span>{sub.member}</span>
                         </span>
-                        <span className="bg-biker-navy-dark text-white font-black text-[10px] px-2 py-0.5 rounded-md flex items-center space-x-1">
-                          <Calendar className="w-2.5 h-2.5" />
-                          <span>Day {sub.day}</span>
-                        </span>
-                        <span className="text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-md flex items-center space-x-1">
-                          <Clock className="w-2.5 h-2.5 text-slate-400" />
-                          <span>{periodLabel}</span>
-                        </span>
+                        {!(sub.type === "certificateReflection" || sub.day === 99) && (
+                          <>
+                            <span className="bg-biker-navy-dark text-white font-black text-[10px] px-2 py-0.5 rounded-md flex items-center space-x-1">
+                              <Calendar className="w-2.5 h-2.5" />
+                              <span>Day {sub.day}</span>
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-md flex items-center space-x-1">
+                              <Clock className="w-2.5 h-2.5 text-slate-400" />
+                              <span>{periodLabel}</span>
+                            </span>
+                          </>
+                        )}
                         {sub.isLocalOnly ? (
                           <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md flex items-center space-x-1">
                             <CloudLightning className="w-2.5 h-2.5 text-amber-500 animate-pulse flex-shrink-0" />
@@ -2628,8 +2615,8 @@ export default function ReflectionPage() {
                               </div>
                             </div>
 
-                            <div className="flex items-center justify-between mt-1">
-                              {(sub.reflectionFull || sub.aiRefinement || "").length > 250 ? (
+                            <div className="flex items-center justify-start mt-1">
+                              {(sub.reflectionFull || sub.aiRefinement || "").length > 250 && (
                                 <button
                                   type="button"
                                   onClick={() => toggleReflectionExpanded(sub.id)}
@@ -2641,26 +2628,7 @@ export default function ReflectionPage() {
                                     <span>閱讀全文 📖</span>
                                   )}
                                 </button>
-                              ) : (
-                                <div />
                               )}
-
-                              <button
-                                onClick={() => handleCopyText(`${sub.id}-full`, sub.reflectionFull || sub.aiRefinement || "")}
-                                className="flex items-center space-x-1 text-[10px] text-slate-500 hover:text-biker-navy font-bold bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded border border-slate-200/60 transition-colors cursor-pointer"
-                              >
-                                {copiedKey === `${sub.id}-full` ? (
-                                  <>
-                                    <Check className="w-3 h-3 text-green-600" />
-                                    <span className="text-green-600">已複製感言</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Clipboard className="w-3 h-3 text-slate-500" />
-                                    <span>複製感言</span>
-                                  </>
-                                )}
-                              </button>
                             </div>
                           </div>
 
@@ -2673,7 +2641,7 @@ export default function ReflectionPage() {
                                   onClick={() => setShowRawForSub(prev => ({ ...prev, [sub.id]: !prev[sub.id] }))}
                                   className="text-[9px] text-slate-400 hover:text-biker-navy font-bold underline cursor-pointer flex items-center space-x-1"
                                 >
-                                  <span>{showRaw ? "收起引導對話 ▲" : "展開查看引導對話歷史 💬"}</span>
+                                  <span>{showRaw ? "收起對話紀錄 ▲" : "展開查看對話紀錄 💬"}</span>
                                 </button>
                               </div>
 
