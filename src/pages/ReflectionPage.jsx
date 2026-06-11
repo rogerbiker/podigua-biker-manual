@@ -759,10 +759,17 @@ export default function ReflectionPage() {
     }));
   };
 
-  // Helper for smooth scrolling
+  // Helper for smooth scrolling with offset for start blocks
   const scrollToElement = (ref, block = "start") => {
     if (ref && ref.current) {
-      ref.current.scrollIntoView({ behavior: "smooth", block });
+      if (block === "start") {
+        const yOffset = -20; // 20px buffer from top
+        const element = ref.current;
+        const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: y, behavior: "smooth" });
+      } else {
+        ref.current.scrollIntoView({ behavior: "smooth", block });
+      }
     }
   };
 
@@ -821,6 +828,11 @@ export default function ReflectionPage() {
       return () => clearTimeout(timer);
     }
   }, [submitStatus]);
+
+  // Scroll to page top when switching between form and viewer tabs
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [activeTab]);
 
   // Viewer State (Data fetched from Firebase)
   const [submissions, setSubmissions] = useState([]);
@@ -1680,7 +1692,7 @@ export default function ReflectionPage() {
   });
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-4 md:py-6 pb-24 md:pb-12 fade-in">
+    <div className="max-w-3xl mx-auto px-4 py-4 md:py-6 pb-24 md:pb-12 fade-in w-full overflow-x-hidden">
       {/* Tab Switcher */}
       <div className="flex bg-slate-100 p-1 rounded-xl mb-4 md:mb-6 shadow-inner">
         <button
@@ -1802,7 +1814,7 @@ export default function ReflectionPage() {
                         value={member}
                         onChange={(e) => setMember(e.target.value)}
                         required
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-biker-navy/20 cursor-pointer"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-base md:text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-biker-navy/20 cursor-pointer"
                       >
                         <option value="">選擇名字...</option>
                         {memberNames.map((name) => (
@@ -1824,7 +1836,7 @@ export default function ReflectionPage() {
                         value={member}
                         onChange={(e) => setMember(e.target.value)}
                         required
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-biker-navy/20 cursor-pointer"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-base md:text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-biker-navy/20 cursor-pointer"
                       >
                         <option value="">選擇名字...</option>
                         {memberNames.map((name) => (
@@ -1844,7 +1856,7 @@ export default function ReflectionPage() {
                         value={day}
                         onChange={(e) => setDay(e.target.value ? parseInt(e.target.value) : "")}
                         required
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-biker-navy/20 cursor-pointer"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-base md:text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-biker-navy/20 cursor-pointer"
                       >
                         <option value="">選擇天數...</option>
                         {[1, 2, 3, 4, 5, 6, 7, 8].map((d) => (
@@ -1965,7 +1977,7 @@ export default function ReflectionPage() {
                             AI小編
                           </span>
                         )}
-                        <p className="whitespace-pre-wrap select-text">{msg.text}</p>
+                        <p className="whitespace-pre-wrap select-text break-words">{msg.text}</p>
                       </div>
                     </div>
                   ))}
@@ -2000,8 +2012,8 @@ export default function ReflectionPage() {
 
                 {/* Bottom Input Area */}
                 {chatHistory.filter(m => m.role === 'user' && !checkCriticism(m.text)).length < 3 ? (
-                  <form onSubmit={handleSendMessage} className="border-t border-slate-100 p-3 bg-white space-y-2">
-                    <div className="relative">
+                  <form onSubmit={handleSendMessage} className="border-t border-slate-100 p-3 bg-white space-y-2 w-full max-w-full box-border">
+                    <div className="relative w-full max-w-full">
                       <textarea
                         value={currentInput}
                         onChange={(e) => {
@@ -2010,9 +2022,20 @@ export default function ReflectionPage() {
                           e.target.style.height = 'auto';
                           e.target.style.height = `${Math.min(180, Math.max(80, e.target.scrollHeight))}px`;
                         }}
+                        onFocus={() => {
+                          setTimeout(() => {
+                            scrollToElement(chatContainerRef, "end");
+                          }, 300);
+                        }}
+                        onBlur={() => {
+                          setTimeout(() => {
+                            window.scrollTo({ top: window.scrollY, behavior: 'smooth' });
+                            scrollToElement(chatContainerRef, "end");
+                          }, 150);
+                        }}
                         placeholder={reflectionMode === "certificate" ? "請輸入或語音說說你的完騎感受..." : "請輸入或語音說說今天的心得..."}
                         style={{ minHeight: "80px", maxHeight: "180px" }}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 pb-12 text-xs md:text-sm text-slate-700 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-biker-navy/15 focus:bg-white transition-all leading-relaxed resize-none overflow-y-auto"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 pb-12 text-base md:text-sm text-slate-700 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-biker-navy/15 focus:bg-white transition-all leading-relaxed resize-none overflow-y-auto break-words"
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
@@ -2118,7 +2141,18 @@ export default function ReflectionPage() {
                         rows={isReflectionExpanded ? 18 : 11}
                         value={polishedReflectionFull}
                         onChange={(e) => setPolishedReflectionFull(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 leading-relaxed font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-biker-navy/15 focus:bg-white transition-all resize-none overflow-y-auto"
+                        onFocus={() => {
+                          setTimeout(() => {
+                            scrollToElement(reviewContainerRef, "start");
+                          }, 300);
+                        }}
+                        onBlur={() => {
+                          setTimeout(() => {
+                            window.scrollTo({ top: window.scrollY, behavior: 'smooth' });
+                            scrollToElement(reviewContainerRef, "start");
+                          }, 150);
+                        }}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-base md:text-sm text-slate-700 leading-relaxed font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-biker-navy/15 focus:bg-white transition-all resize-none overflow-y-auto break-words"
                         style={{ height: isReflectionExpanded ? "380px" : "240px" }}
                       />
                     </div>
@@ -2163,7 +2197,18 @@ export default function ReflectionPage() {
                       rows={8}
                       value={polishedReflection}
                       onChange={(e) => setPolishedReflection(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 leading-relaxed font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-biker-navy/15 focus:bg-white transition-all resize-y"
+                      onFocus={() => {
+                        setTimeout(() => {
+                          scrollToElement(reviewContainerRef, "start");
+                        }, 300);
+                      }}
+                      onBlur={() => {
+                        setTimeout(() => {
+                          window.scrollTo({ top: window.scrollY, behavior: 'smooth' });
+                          scrollToElement(reviewContainerRef, "start");
+                        }, 150);
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-base md:text-sm text-slate-700 leading-relaxed font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-biker-navy/15 focus:bg-white transition-all resize-y break-words"
                     />
                   </div>
                 )}
