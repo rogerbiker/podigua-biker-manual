@@ -746,13 +746,54 @@ export default function ReflectionPage() {
   });
 
   const chatEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
+  const reviewContainerRef = useRef(null);
+  const successContainerRef = useRef(null);
+  
+  const [expandedReflections, setExpandedReflections] = useState({});
 
-  // Scroll to bottom of chat history when messages change or AI starts generating
+  const toggleReflectionExpanded = (id) => {
+    setExpandedReflections(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  // Helper for smooth scrolling
+  const scrollToElement = (ref, block = "start") => {
+    if (ref && ref.current) {
+      ref.current.scrollIntoView({ behavior: "smooth", block });
+    }
+  };
+
+  // Scroll to step containers when step transitions occur
   useEffect(() => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    if (chatStep === "chat") {
+      const timer = setTimeout(() => {
+        scrollToElement(chatContainerRef, "start");
+      }, 100);
+      return () => clearTimeout(timer);
+    } else if (chatStep === "review") {
+      const timer = setTimeout(() => {
+        scrollToElement(reviewContainerRef, "start");
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [chatStep]);
+
+  // Scroll within the chat viewport and align container bottom on new messages / generating status
+  useEffect(() => {
+    if (chatStep === "chat") {
+      if (chatEndRef.current) {
+        chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+      }
+      const timer = setTimeout(() => {
+        scrollToElement(chatContainerRef, "end");
+      }, 150);
+      return () => clearTimeout(timer);
     }
   }, [chatHistory, isAiGenerating, chatStep]);
+
   
   // 6 free form inputs
   const [rawAnswers, setRawAnswers] = useState({
@@ -770,6 +811,16 @@ export default function ReflectionPage() {
   // Submission Status
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); // "success", "error", "saved-locally"
+
+  // Scroll to success screen when submit status is set
+  useEffect(() => {
+    if (submitStatus) {
+      const timer = setTimeout(() => {
+        scrollToElement(successContainerRef, "start");
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [submitStatus]);
 
   // Viewer State (Data fetched from Firebase)
   const [submissions, setSubmissions] = useState([]);
@@ -1151,10 +1202,25 @@ export default function ReflectionPage() {
       return;
     }
     
+    let finalShort = polishedReflectionShort.trim();
+    const finalFull = polishedReflectionFull.trim();
+
     if (reflectionMode === "certificate") {
-      if (!polishedReflectionShort.trim() || !polishedReflectionFull.trim()) {
+      if (!finalFull) {
         alert("感言整理內容不能為空！");
         return;
+      }
+      if (!finalShort) {
+        if (finalFull.length > 130) {
+          const truncateIdx = finalFull.indexOf("。", 100);
+          if (truncateIdx !== -1 && truncateIdx < 160) {
+            finalShort = finalFull.substring(0, truncateIdx + 1);
+          } else {
+            finalShort = finalFull.substring(0, 130) + "...";
+          }
+        } else {
+          finalShort = finalFull;
+        }
       }
     } else {
       if (!polishedReflection.trim()) {
@@ -1172,9 +1238,9 @@ export default function ReflectionPage() {
       period: reflectionMode === "certificate" ? "certificate" : period,
       type: reflectionMode === "certificate" ? "certificateReflection" : "daily",
       chatHistory,
-      reflectionShort: reflectionMode === "certificate" ? polishedReflectionShort.trim() : null,
-      reflectionFull: reflectionMode === "certificate" ? polishedReflectionFull.trim() : null,
-      aiRefinement: reflectionMode === "certificate" ? polishedReflectionFull.trim() : polishedReflection.trim(),
+      reflectionShort: reflectionMode === "certificate" ? finalShort : null,
+      reflectionFull: reflectionMode === "certificate" ? finalFull : null,
+      aiRefinement: reflectionMode === "certificate" ? finalFull : polishedReflection.trim(),
       createdAt: new Date().toISOString(),
     };
     
@@ -1639,21 +1705,9 @@ export default function ReflectionPage() {
         </button>
       </div>
 
-      {/* VIEW 1: Reflections Input Form */}
       {activeTab === "form" && (
         submitStatus ? (
-          <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm text-center space-y-6 animate-zoom-in">
-            <div className="flex justify-center">
-              {submitStatus === "success" ? (
-                <div className="bg-green-100 text-green-600 p-4 rounded-full">
-                  <CheckCircle2 className="w-12 h-12 animate-bounce-slow" />
-                </div>
-              ) : (
-                <div className="bg-amber-100 text-amber-600 p-4 rounded-full animate-pulse">
-                  <CloudLightning className="w-12 h-12" />
-                </div>
-              )}
-            </div>
+          <div ref={successContainerRef} className="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm text-center space-y-6 animate-zoom-in">
 
             <div className="space-y-2">
               <h3 className="text-lg font-black text-slate-800">
@@ -1844,7 +1898,7 @@ export default function ReflectionPage() {
 
             {/* Step 2: Active Conversation View */}
             {chatStep === "chat" && (
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col overflow-hidden animate-zoom-in h-[560px] md:h-[620px]">
+              <div ref={chatContainerRef} className="bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col overflow-hidden animate-zoom-in h-[560px] md:h-[620px]">
                 {/* Chat Header */}
                 <div className="bg-slate-50 border-b border-slate-150/80 px-4 py-2 flex items-center justify-between">
                   <div className="flex items-center space-x-2">
@@ -2029,9 +2083,8 @@ export default function ReflectionPage() {
               </div>
             )}
 
-            {/* Step 3: Review Summarization & Polished Text Screen */}
             {chatStep === "review" && (
-              <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6 animate-zoom-in">
+              <div ref={reviewContainerRef} className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6 animate-zoom-in">
                 {isUsingSimulator && (
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[10px] font-bold text-amber-800 flex items-center space-x-1.5 select-none">
                     <span>⚠️ 備援模式已啟動：目前心得內容由「本地智慧模擬器」生成，非真實 AI。</span>
@@ -2062,11 +2115,11 @@ export default function ReflectionPage() {
                         </span>
                       </label>
                       <textarea
-                        rows={isReflectionExpanded ? 12 : 4}
+                        rows={isReflectionExpanded ? 18 : 11}
                         value={polishedReflectionFull}
                         onChange={(e) => setPolishedReflectionFull(e.target.value)}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 leading-relaxed font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-biker-navy/15 focus:bg-white transition-all resize-none overflow-y-auto"
-                        style={{ height: isReflectionExpanded ? "260px" : "100px" }}
+                        style={{ height: isReflectionExpanded ? "380px" : "240px" }}
                       />
                     </div>
                     
@@ -2122,7 +2175,7 @@ export default function ReflectionPage() {
                     disabled={
                       isSubmitting || 
                       (reflectionMode === "certificate" 
-                        ? (!polishedReflectionShort.trim() || !polishedReflectionFull.trim()) 
+                        ? !polishedReflectionFull.trim() 
                         : !polishedReflection.trim())
                     }
                     className="flex-1 py-3 px-6 rounded-xl font-black text-sm text-white shadow-md flex items-center justify-center space-x-2 transition-all active:scale-[0.98] bg-biker-orange hover:bg-biker-orange-dark cursor-pointer disabled:bg-slate-300 disabled:cursor-not-allowed"
@@ -2512,59 +2565,54 @@ export default function ReflectionPage() {
                     <div className="space-y-4">
                       {sub.type === "certificateReflection" || sub.day === 99 ? (
                         <div className="space-y-4">
-                          {/* 短版感言 */}
+                          {/* 完騎感言內容 */}
                           <div className="space-y-1.5">
                             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center space-x-1">
-                              <span>🎓 證書卡片感言 (短版，建議 100 - 160 字)</span>
-                              <span className="text-[9px] text-slate-400 font-normal">({sub.reflectionShort?.length || 0} 字)</span>
-                            </span>
-                            <div className="bg-orange-50/20 border border-orange-100/50 p-3.5 rounded-xl text-xs text-slate-700 leading-relaxed font-semibold italic relative pl-8 select-all">
-                              <span className="absolute left-2.5 top-1.5 text-lg text-biker-orange font-serif leading-none select-none">“</span>
-                              {sub.reflectionShort || "（無短版感言）"}
-                            </div>
-                            <div className="flex justify-end">
-                              <button
-                                onClick={() => handleCopyText(`${sub.id}-short`, sub.reflectionShort || "")}
-                                className="flex items-center space-x-1 text-[10px] text-slate-500 hover:text-biker-navy font-bold bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded border border-slate-200/60 transition-colors cursor-pointer"
-                              >
-                                {copiedKey === `${sub.id}-short` ? (
-                                  <>
-                                    <Check className="w-3 h-3 text-green-600" />
-                                    <span className="text-green-600">已複製短版</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Clipboard className="w-3 h-3 text-slate-500" />
-                                    <span>複製短版 (證書用)</span>
-                                  </>
-                                )}
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* 完整版感言 */}
-                          <div className="space-y-1.5">
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center space-x-1">
-                              <span>📜 完整版完騎感言 (長版)</span>
+                              <span>📜 完騎感言內容</span>
                               <span className="text-[9px] text-slate-400 font-normal">({(sub.reflectionFull || sub.aiRefinement || "").length} 字)</span>
                             </span>
-                            <div className="bg-slate-50/60 border border-slate-200/50 p-3.5 rounded-xl text-xs text-slate-700 leading-relaxed font-medium select-all">
-                              {sub.reflectionFull || sub.aiRefinement || "（無完整版感言）"}
+                            
+                            <div className="relative">
+                              <div className={`bg-slate-50/60 border border-slate-200/50 p-3.5 rounded-xl text-xs text-slate-700 leading-relaxed font-medium select-text transition-all duration-300 ${
+                                !expandedReflections[sub.id] ? "max-h-[240px] overflow-hidden" : ""
+                              }`}>
+                                {sub.reflectionFull || sub.aiRefinement || "（無完騎感言內容）"}
+                                {!expandedReflections[sub.id] && (sub.reflectionFull || sub.aiRefinement || "").length > 250 && (
+                                  <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-slate-50/90 via-slate-50/60 to-transparent pointer-events-none" />
+                                )}
+                              </div>
                             </div>
-                            <div className="flex justify-end">
+
+                            <div className="flex items-center justify-between mt-1">
+                              {(sub.reflectionFull || sub.aiRefinement || "").length > 250 ? (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleReflectionExpanded(sub.id)}
+                                  className="text-[10px] font-black text-biker-navy hover:text-biker-orange transition-all cursor-pointer flex items-center space-x-1"
+                                >
+                                  {expandedReflections[sub.id] ? (
+                                    <span>收合感言 ↩</span>
+                                  ) : (
+                                    <span>閱讀全文 📖</span>
+                                  )}
+                                </button>
+                              ) : (
+                                <div />
+                              )}
+
                               <button
                                 onClick={() => handleCopyText(`${sub.id}-full`, sub.reflectionFull || sub.aiRefinement || "")}
-                                className="flex-1 max-w-max flex items-center space-x-1 text-[10px] text-slate-500 hover:text-biker-navy font-bold bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded border border-slate-200/60 transition-colors cursor-pointer"
+                                className="flex items-center space-x-1 text-[10px] text-slate-500 hover:text-biker-navy font-bold bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded border border-slate-200/60 transition-colors cursor-pointer"
                               >
                                 {copiedKey === `${sub.id}-full` ? (
                                   <>
                                     <Check className="w-3 h-3 text-green-600" />
-                                    <span className="text-green-600">已複製完整版</span>
+                                    <span className="text-green-600">已複製感言</span>
                                   </>
                                 ) : (
                                   <>
                                     <Clipboard className="w-3 h-3 text-slate-500" />
-                                    <span>複製完整版</span>
+                                    <span>複製感言</span>
                                   </>
                                 )}
                               </button>
