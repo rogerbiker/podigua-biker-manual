@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bike, Utensils, Users, Bell, DollarSign, Compass, Film, Menu, X, MessageSquare, Camera, BookOpen, Award } from "lucide-react";
+import { Bike, Users, Compass, Menu, X, MessageSquare, BookOpen } from "lucide-react";
 
 export default function Header({ currentTab, setCurrentTab }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -9,13 +9,7 @@ export default function Header({ currentTab, setCurrentTab }) {
     { id: "trip", label: "行程", icon: Bike },
     { id: "route", label: "記錄", icon: BookOpen },
     { id: "reflections", label: "感想", icon: MessageSquare },
-    { id: "media", label: "影像紀錄", icon: Camera },
-    { id: "food-lodging", label: "住宿餐食", icon: Utensils },
     { id: "members", label: "成員", icon: Users },
-    { id: "certificates", label: "完騎證書", icon: Award },
-    { id: "review", label: "2025回顧", icon: Film },
-    { id: "reminders", label: "重要提醒", icon: Bell },
-    { id: "cost", label: "費用整理", icon: DollarSign },
   ];
 
   return (
@@ -46,7 +40,7 @@ export default function Header({ currentTab, setCurrentTab }) {
         <nav className="hidden md:flex space-x-1">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = currentTab === item.id || (item.id === "media" && currentTab.startsWith("media"));
+            const isActive = currentTab === item.id;
             return (
               <button
                 key={item.id}
@@ -76,10 +70,10 @@ export default function Header({ currentTab, setCurrentTab }) {
       {/* Mobile Dropdown Navigation Panel */}
       {isMenuOpen && (
         <div className="md:hidden bg-[#132354] border-t border-slate-800 py-3 px-4 shadow-lg animate-zoom-in">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="flex flex-col space-y-2">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = currentTab === item.id || (item.id === "media" && currentTab.startsWith("media"));
+              const isActive = currentTab === item.id;
               return (
                 <button
                   key={item.id}
@@ -87,14 +81,14 @@ export default function Header({ currentTab, setCurrentTab }) {
                     setCurrentTab(item.id);
                     setIsMenuOpen(false);
                   }}
-                  className={`flex items-center space-x-2 p-2.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer whitespace-nowrap ${
+                  className={`flex items-center space-x-3 p-3 rounded-xl text-sm font-bold transition-all duration-150 cursor-pointer ${
                     isActive
                       ? "bg-biker-orange text-white shadow-md"
-                      : "text-slate-300 hover:text-white hover:bg-biker-navy/30"
+                      : "text-slate-300 hover:text-white hover:bg-[#0f1b40]"
                   }`}
                 >
-                  <Icon className="w-4 h-4 flex-shrink-0" />
-                  <span className="whitespace-nowrap">{item.label}</span>
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  <span>{item.label}</span>
                 </button>
               );
             })}
