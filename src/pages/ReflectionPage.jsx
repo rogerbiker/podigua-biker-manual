@@ -856,6 +856,7 @@ export default function ReflectionPage() {
   const [testError, setTestError] = useState("");
   const [importJson, setImportJson] = useState("");
   const [copySuccess, setCopySuccess] = useState(false);
+  const [selectedLocalKeys, setSelectedLocalKeys] = useState([]);
 
   // Get current day's special questions for靈感提示
   const currentSpecialQuestions = day ? (specialQuestionsByDay[day] || []) : [];
@@ -1597,6 +1598,38 @@ export default function ReflectionPage() {
       localStorage.removeItem("podigua_cloud_submissions");
       alert("本機暫存已成功清空！");
       fetchSubmissions();
+    }
+  };
+
+  // Clear selected local reflections only
+  const handleClearSelectedLocalData = () => {
+    if (selectedLocalKeys.length === 0) return;
+    
+    const confirmMsg = `⚠️ 確定要清除這 ${selectedLocalKeys.length} 筆選取的本機暫存心得嗎？\n\n【重要聲明與警示】\n1. 此操作僅會清除目前這台手機或瀏覽器中的本機暫存心得，完全不會刪除雲端資料庫中的任何資料、照片、影片、成員或行程。\n2. 清除後將無法復原。`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const local = JSON.parse(localStorage.getItem("podigua_local_reflections") || "[]");
+      const pending = JSON.parse(localStorage.getItem("podigua_pending_reflections") || "[]");
+
+      const newLocal = local.filter((item, idx) => {
+        const key = `local-${item.createdAt || ''}-${item.member || ''}-${idx}`;
+        return !selectedLocalKeys.includes(key);
+      });
+
+      const newPending = pending.filter((item, idx) => {
+        const key = `pending-${item.createdAt || ''}-${item.member || ''}-${idx}`;
+        return !selectedLocalKeys.includes(key);
+      });
+
+      localStorage.setItem("podigua_local_reflections", JSON.stringify(newLocal));
+      localStorage.setItem("podigua_pending_reflections", JSON.stringify(newPending));
+
+      setSelectedLocalKeys([]);
+      alert("已成功清除選取的本機暫存項目！");
+      fetchSubmissions();
+    } catch (err) {
+      alert(`清除失敗：${err.message}`);
     }
   };
 
@@ -2605,8 +2638,8 @@ export default function ReflectionPage() {
                             </span>
                             
                             <div className="relative">
-                              <div className={`bg-slate-50/60 border border-slate-200/50 p-3.5 rounded-xl text-xs text-slate-700 leading-relaxed font-medium select-text transition-all duration-300 ${
-                                !expandedReflections[sub.id] ? "max-h-[240px] overflow-hidden" : ""
+                              <div className={`bg-slate-50/60 border border-slate-200/50 p-3.5 rounded-xl text-[18px] md:text-base text-slate-700 leading-[1.8] font-medium select-text transition-all duration-300 ${
+                                !expandedReflections[sub.id] ? "max-h-[280px] overflow-hidden" : ""
                               }`}>
                                 {sub.reflectionFull || sub.aiRefinement || "（無完騎感言內容）"}
                                 {!expandedReflections[sub.id] && (sub.reflectionFull || sub.aiRefinement || "").length > 250 && (
@@ -2620,7 +2653,7 @@ export default function ReflectionPage() {
                                 <button
                                   type="button"
                                   onClick={() => toggleReflectionExpanded(sub.id)}
-                                  className="text-[10px] font-black text-biker-navy hover:text-biker-orange transition-all cursor-pointer flex items-center space-x-1"
+                                  className="text-xs font-black text-biker-navy hover:text-biker-orange transition-all cursor-pointer flex items-center space-x-1"
                                 >
                                   {expandedReflections[sub.id] ? (
                                     <span>收合感言 ↩</span>
@@ -2639,7 +2672,7 @@ export default function ReflectionPage() {
                                 <button
                                   type="button"
                                   onClick={() => setShowRawForSub(prev => ({ ...prev, [sub.id]: !prev[sub.id] }))}
-                                  className="text-[9px] text-slate-400 hover:text-biker-navy font-bold underline cursor-pointer flex items-center space-x-1"
+                                  className="text-xs text-slate-400 hover:text-biker-navy font-bold underline cursor-pointer flex items-center space-x-1"
                                 >
                                   <span>{showRaw ? "收起對話紀錄 ▲" : "展開查看對話紀錄 💬"}</span>
                                 </button>
@@ -2648,7 +2681,7 @@ export default function ReflectionPage() {
                               {showRaw && (
                                 <div className="space-y-2 mt-2 pl-3 border-l-2 border-biker-navy/20 py-1.5 animate-fade-in bg-slate-50/50 rounded-r-xl p-2.5">
                                   {sub.chatHistory.map((chat, idx) => (
-                                    <div key={idx} className="text-[11px] leading-relaxed">
+                                    <div key={idx} className="text-sm leading-relaxed">
                                       <span className={`inline-block font-bold mr-1.5 ${chat.role === 'user' ? 'text-biker-navy' : 'text-biker-orange'}`}>
                                         {chat.role === 'user' ? '👤 隊友：' : '🤖 AI小編：'}
                                       </span>
@@ -2664,7 +2697,7 @@ export default function ReflectionPage() {
                         isNewFormat ? (
                           <div className="space-y-3">
                           {/* 完整心得段落 */}
-                          <div className="bg-orange-50/20 border border-orange-100/50 p-3.5 rounded-xl text-xs text-slate-700 leading-relaxed font-medium italic relative pl-8 select-all">
+                          <div className="bg-orange-50/20 border border-orange-100/50 p-3.5 rounded-xl text-[18px] md:text-base text-slate-700 leading-[1.8] font-medium italic relative pl-8 select-all">
                             <span className="absolute left-2.5 top-2 text-lg text-biker-orange font-serif leading-none select-none">“</span>
                             {sub.aiRefinement || "（無心得內容）"}
                           </div>
@@ -2676,7 +2709,7 @@ export default function ReflectionPage() {
                                 <button
                                   type="button"
                                   onClick={() => setShowRawForSub(prev => ({ ...prev, [sub.id]: !prev[sub.id] }))}
-                                  className="text-[9px] text-slate-400 hover:text-biker-navy font-bold underline cursor-pointer flex items-center space-x-1"
+                                  className="text-xs text-slate-400 hover:text-biker-navy font-bold underline cursor-pointer flex items-center space-x-1"
                                 >
                                   <span>{showRaw ? "收起對話紀錄 ▲" : "展開查看對話歷史 💬"}</span>
                                 </button>
@@ -2686,8 +2719,8 @@ export default function ReflectionPage() {
                               {showRaw && (
                                 <div className="space-y-2 pl-3 border-l-2 border-biker-navy/20 py-1.5 animate-fade-in bg-slate-50/50 rounded-r-xl p-2.5">
                                   {sub.chatHistory.map((chat, idx) => (
-                                    <div key={idx} className="text-[11px] leading-relaxed">
-                                      <span className={`inline-block font-bold mr-1.5 \${chat.role === 'user' ? 'text-biker-navy' : 'text-biker-orange'}`}>
+                                    <div key={idx} className="text-sm leading-relaxed">
+                                      <span className={`inline-block font-bold mr-1.5 ${chat.role === 'user' ? 'text-biker-navy' : 'text-biker-orange'}`}>
                                         {chat.role === 'user' ? '👤 隊友：' : '🤖 AI小編：'}
                                       </span>
                                       <span className="text-slate-700 font-medium select-text">{chat.text}</span>
@@ -2702,7 +2735,7 @@ export default function ReflectionPage() {
                                 <button
                                   type="button"
                                   onClick={() => setShowRawForSub(prev => ({ ...prev, [sub.id]: !prev[sub.id] }))}
-                                  className="text-[9px] text-slate-400 hover:text-biker-navy font-bold underline cursor-pointer"
+                                  className="text-xs text-slate-400 hover:text-biker-navy font-bold underline cursor-pointer"
                                 >
                                   {showRaw ? "收起原始分段細節 ▲" : "展開查看 6 項原始回答 ▼"}
                                 </button>
@@ -2892,6 +2925,115 @@ export default function ReflectionPage() {
                     </button>
                   </div>
                 </div>
+
+                {(() => {
+                  if (typeof window === "undefined") return null;
+                  const local = JSON.parse(localStorage.getItem("podigua_local_reflections") || "[]");
+                  const pending = JSON.parse(localStorage.getItem("podigua_pending_reflections") || "[]");
+                  
+                  const localItems = local.map((item, idx) => ({
+                    id: `local-${item.createdAt || ''}-${item.member || ''}-${idx}`,
+                    source: "local",
+                    sourceLabel: "本機暫存",
+                    item
+                  }));
+                  
+                  const pendingItems = pending.map((item, idx) => ({
+                    id: `pending-${item.createdAt || ''}-${item.member || ''}-${idx}`,
+                    source: "pending",
+                    sourceLabel: "待上傳佇列",
+                    item
+                  }));
+
+                  const allItems = [...localItems, ...pendingItems];
+
+                  if (allItems.length === 0) return null;
+
+                  return (
+                    <div className="mt-3 border border-slate-200 rounded-xl p-3 bg-slate-50/50 space-y-2 text-left">
+                      <span className="block text-[11px] font-bold text-slate-700">🧹 選擇性清除本機暫存紀錄：</span>
+                      
+                      <div className="max-h-[200px] overflow-y-auto space-y-1.5 pr-1 text-[10px]">
+                        {allItems.map((wrapper) => {
+                          const item = wrapper.item;
+                          const isChecked = selectedLocalKeys.includes(wrapper.id);
+                          const dateStr = item.createdAt ? new Date(item.createdAt).toLocaleString("zh-TW") : "無時間";
+                          
+                          // Type label
+                          const isCert = item.type === "certificateReflection" || item.day === 99;
+                          const typeLabel = isCert ? "完騎感言" : `Day ${item.day} 心得`;
+                          
+                          // Snippet of reflection text
+                          const textSnippet = (item.reflectionFull || item.aiRefinement || item.text || "").substring(0, 30) + "...";
+                          
+                          return (
+                            <div key={wrapper.id} className="flex items-start space-x-2 p-2 bg-white rounded-lg border border-slate-100 shadow-sm font-sans">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedLocalKeys(prev => [...prev, wrapper.id]);
+                                  } else {
+                                    setSelectedLocalKeys(prev => prev.filter(k => k !== wrapper.id));
+                                  }
+                                }}
+                                className="mt-0.5 rounded text-biker-orange focus:ring-biker-orange cursor-pointer"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between mb-0.5">
+                                  <span className="font-bold text-slate-800">{item.member} ({typeLabel})</span>
+                                  <span className={`px-1.5 py-0.5 rounded text-[8px] font-black ${wrapper.source === "pending" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"}`}>
+                                    {wrapper.sourceLabel}
+                                  </span>
+                                </div>
+                                <div className="text-slate-500 leading-normal">{textSnippet}</div>
+                                <div className="text-[8px] text-slate-400 mt-0.5">{dateStr}</div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                        <div className="flex space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm("⚠️ 您確定要全選所有本機暫存心得嗎？")) {
+                                const allKeys = allItems.map(w => w.id);
+                                setSelectedLocalKeys(allKeys);
+                              }
+                            }}
+                            className="text-[9px] font-bold text-biker-navy underline cursor-pointer hover:text-biker-orange"
+                          >
+                            全選
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedLocalKeys([])}
+                            className="text-[9px] font-bold text-slate-400 underline cursor-pointer hover:text-slate-650"
+                          >
+                            取消全選
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleClearSelectedLocalData}
+                          disabled={selectedLocalKeys.length === 0}
+                          className={`font-bold py-1 px-2.5 rounded-lg text-[10px] flex items-center space-x-1 cursor-pointer transition-all ${
+                            selectedLocalKeys.length > 0 
+                              ? "bg-red-500 hover:bg-red-600 text-white shadow-sm" 
+                              : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                          }`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>清除選取暫存 ({selectedLocalKeys.length})</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-slate-600">
