@@ -3,6 +3,7 @@ import { Bike, Users, Compass, Menu, X, MessageSquare, BookOpen, Settings } from
 
 export default function Header({ currentTab, setCurrentTab }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAdminSubMenuOpen, setIsAdminSubMenuOpen] = useState(false);
 
   const [isAdminMode, setIsAdminMode] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -77,7 +78,69 @@ export default function Header({ currentTab, setCurrentTab }) {
       {isMenuOpen && (
         <div className="md:hidden bg-[#132354] border-t border-slate-800 py-4 px-4 shadow-xl animate-zoom-in rounded-b-2xl">
           <div className="flex flex-col space-y-3">
-            {/* Prominent Home Card */}
+            {/* Title Area and Settings Trigger */}
+            <div className="flex items-center justify-between pb-1 border-b border-slate-800/80">
+              <span className="text-xs font-bold text-slate-400 tracking-wider">🗺️ 騎旅選單</span>
+              {/* Gear Icon with 40x40px click area */}
+              <button
+                type="button"
+                onClick={() => setIsAdminSubMenuOpen(!isAdminSubMenuOpen)}
+                className="w-10 h-10 -mr-2 flex items-center justify-center focus:outline-none transition-all duration-150 active:scale-95 cursor-pointer"
+                title="系統管理選單"
+              >
+                <div className={`w-7 h-7 flex items-center justify-center rounded-full border transition-colors ${
+                  isAdminSubMenuOpen
+                    ? "bg-[#1d2d5f] border-amber-500/50 text-amber-400"
+                    : "bg-[#132354] border-slate-700/50 text-slate-400 hover:text-slate-200"
+                }`}>
+                  <Settings className="w-4 h-4" />
+                </div>
+              </button>
+            </div>
+
+            {/* Expanded Second-level Admin Menu */}
+            {isAdminSubMenuOpen && (
+              <div className="bg-[#0f1b40]/80 border border-slate-800 rounded-xl p-2.5 space-y-2 animate-fade-in text-[11px] shadow-inner text-left">
+                <span className="block font-bold text-slate-400 mb-1 border-b border-slate-800 pb-0.5">🛠️ 系統功能入口 (預覽/需驗證)</span>
+                <div className="flex flex-col space-y-1.5">
+                  <button
+                    onClick={() => {
+                      setCurrentTab("media");
+                      setIsMenuOpen(false);
+                    }}
+                    className="flex items-center justify-between p-2 rounded-lg bg-[#1d2d5f]/60 hover:bg-[#253975] text-slate-300 hover:text-white border border-slate-700/30 text-left transition-colors cursor-pointer"
+                  >
+                    <span>📷 影像紀錄管理 (後台準備中)</span>
+                    <span className="text-[9px] text-slate-500 font-medium">前台頁面</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setCurrentTab("reflections");
+                      setIsMenuOpen(false);
+                    }}
+                    className="flex items-center justify-between p-2 rounded-lg bg-[#1d2d5f]/60 hover:bg-[#253975] text-slate-300 hover:text-white border border-slate-700/30 text-left transition-colors cursor-pointer"
+                  >
+                    <span>📝 心得記錄管理 (前台連結)</span>
+                    <span className="text-[9px] text-slate-500 font-medium">前台頁面</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      window.location.hash = "#admin-diagnostics";
+                      setCurrentTab("reflections");
+                      setIsMenuOpen(false);
+                    }}
+                    className="flex items-center justify-between p-2 rounded-lg bg-[#1d2d5f]/60 hover:bg-[#253975] text-amber-400 hover:text-amber-300 border border-amber-500/20 text-left transition-colors cursor-pointer"
+                  >
+                    <span>🧹 本機暫存診斷 (需參數)</span>
+                    <span className="text-[9px] text-amber-600 font-bold">開啟診斷</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Prominent Home Card (橘色主按鈕) */}
             {(() => {
               const homeItem = navItems.find(i => i.id === "home");
               if (!homeItem) return null;
@@ -92,19 +155,19 @@ export default function Header({ currentTab, setCurrentTab }) {
                     }
                     setIsMenuOpen(false);
                   }}
-                  className={`w-full flex items-center justify-center space-x-2.5 p-3.5 rounded-xl text-base font-bold transition-all duration-150 cursor-pointer border ${
+                  className={`w-full flex items-center justify-center space-x-2 p-2.5 rounded-xl text-sm font-bold transition-all duration-150 cursor-pointer border ${
                     isActive
-                      ? "bg-biker-orange border-biker-orange text-white shadow-md"
+                      ? "bg-biker-orange border-biker-orange text-white shadow-sm"
                       : "bg-[#1d2d5f] border-slate-700/50 text-slate-100 hover:bg-[#253975]"
                   }`}
                 >
-                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  <Icon className="w-4.5 h-4.5 flex-shrink-0" />
                   <span>{homeItem.label}</span>
                 </button>
               );
             })()}
 
-            {/* 2x2 Grid for other items (行程, 記錄, 感想, 成員) */}
+            {/* 2x2 Grid for other items (行程, 記錄, 感想, 成員) - 較柔和的卡片式按鈕 */}
             <div className="grid grid-cols-2 gap-3">
               {navItems.filter(i => i.id !== "home").map((item) => {
                 const Icon = item.icon;
@@ -120,39 +183,20 @@ export default function Header({ currentTab, setCurrentTab }) {
                       }
                       setIsMenuOpen(false);
                     }}
-                    className={`flex flex-col items-center justify-center py-3.5 px-3 rounded-xl text-sm font-bold transition-all duration-150 cursor-pointer border space-y-1.5 ${
+                    className={`flex flex-col items-center justify-center py-3.5 px-3 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer border space-y-1.5 shadow-sm ${
                       isActive
-                        ? "bg-biker-orange border-biker-orange text-white shadow-md"
-                        : "bg-[#1d2d5f] border-slate-700/50 text-slate-200 hover:bg-[#253975]"
+                        ? "bg-[#1c2e69] border-biker-orange text-biker-orange font-black"
+                        : "bg-[#1d2d5f] border-slate-700/50 text-slate-300 hover:bg-[#253975] hover:text-white"
                     }`}
                   >
-                    <div className={`p-2 rounded-full ${isActive ? "bg-white/20" : "bg-[#132354]"}`}>
-                      <Icon className="w-5 h-5 flex-shrink-0" />
+                    <div className={`p-1.5 rounded-full ${isActive ? "bg-biker-orange/15 text-biker-orange" : "bg-[#132354] text-slate-400"}`}>
+                      <Icon className="w-4 h-4 flex-shrink-0" />
                     </div>
                     <span>{item.label}</span>
                   </button>
                 );
               })}
             </div>
-
-            {/* Admin Tools Panel Button */}
-            {isAdminMode && (
-              <button
-                onClick={() => {
-                  window.location.hash = "#admin-diagnostics";
-                  setCurrentTab("reflections");
-                  setIsMenuOpen(false);
-                }}
-                className={`w-full flex items-center justify-center space-x-2 p-3 mt-1.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer border ${
-                  currentTab === "reflections" && window.location.hash === "#admin-diagnostics"
-                    ? "bg-amber-600 border-amber-600 text-white shadow-md"
-                    : "bg-[#1d2d5f]/40 border-amber-500/30 text-amber-400 hover:bg-[#253975]/40"
-                }`}
-              >
-                <Settings className="w-4 h-4 flex-shrink-0" />
-                <span>⚙️ 管理員工具</span>
-              </button>
-            )}
           </div>
         </div>
       )}
