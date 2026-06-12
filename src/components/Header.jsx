@@ -1,8 +1,14 @@
 import { useState } from "react";
-import { Bike, Users, Compass, Menu, X, MessageSquare, BookOpen } from "lucide-react";
+import { Bike, Users, Compass, Menu, X, MessageSquare, BookOpen, Settings } from "lucide-react";
 
 export default function Header({ currentTab, setCurrentTab }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const [isAdminMode, setIsAdminMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    return params.has("admin") || params.has("debug") || params.has("beta");
+  });
 
   const navItems = [
     { id: "home", label: "首頁", icon: Compass },
@@ -69,29 +75,84 @@ export default function Header({ currentTab, setCurrentTab }) {
 
       {/* Mobile Dropdown Navigation Panel */}
       {isMenuOpen && (
-        <div className="md:hidden bg-[#132354] border-t border-slate-800 py-3 px-4 shadow-lg animate-zoom-in">
-          <div className="flex flex-col space-y-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = currentTab === item.id;
+        <div className="md:hidden bg-[#132354] border-t border-slate-800 py-4 px-4 shadow-xl animate-zoom-in rounded-b-2xl">
+          <div className="flex flex-col space-y-3">
+            {/* Prominent Home Card */}
+            {(() => {
+              const homeItem = navItems.find(i => i.id === "home");
+              if (!homeItem) return null;
+              const Icon = homeItem.icon;
+              const isActive = currentTab === homeItem.id && (!window.location.hash || window.location.hash !== "#admin-diagnostics");
               return (
                 <button
-                  key={item.id}
                   onClick={() => {
-                    setCurrentTab(item.id);
+                    setCurrentTab(homeItem.id);
+                    if (window.location.hash) {
+                      window.location.hash = "";
+                    }
                     setIsMenuOpen(false);
                   }}
-                  className={`flex items-center space-x-3 p-3 rounded-xl text-sm font-bold transition-all duration-150 cursor-pointer ${
+                  className={`w-full flex items-center justify-center space-x-2.5 p-3.5 rounded-xl text-base font-bold transition-all duration-150 cursor-pointer border ${
                     isActive
-                      ? "bg-biker-orange text-white shadow-md"
-                      : "text-slate-300 hover:text-white hover:bg-[#0f1b40]"
+                      ? "bg-biker-orange border-biker-orange text-white shadow-md"
+                      : "bg-[#1d2d5f] border-slate-700/50 text-slate-100 hover:bg-[#253975]"
                   }`}
                 >
                   <Icon className="w-5 h-5 flex-shrink-0" />
-                  <span>{item.label}</span>
+                  <span>{homeItem.label}</span>
                 </button>
               );
-            })}
+            })()}
+
+            {/* 2x2 Grid for other items (行程, 記錄, 感想, 成員) */}
+            <div className="grid grid-cols-2 gap-3">
+              {navItems.filter(i => i.id !== "home").map((item) => {
+                const Icon = item.icon;
+                const isDiagnosticsActive = window.location.hash === "#admin-diagnostics";
+                const isActive = currentTab === item.id && !(item.id === "reflections" && isDiagnosticsActive);
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setCurrentTab(item.id);
+                      if (window.location.hash) {
+                        window.location.hash = "";
+                      }
+                      setIsMenuOpen(false);
+                    }}
+                    className={`flex flex-col items-center justify-center py-3.5 px-3 rounded-xl text-sm font-bold transition-all duration-150 cursor-pointer border space-y-1.5 ${
+                      isActive
+                        ? "bg-biker-orange border-biker-orange text-white shadow-md"
+                        : "bg-[#1d2d5f] border-slate-700/50 text-slate-200 hover:bg-[#253975]"
+                    }`}
+                  >
+                    <div className={`p-2 rounded-full ${isActive ? "bg-white/20" : "bg-[#132354]"}`}>
+                      <Icon className="w-5 h-5 flex-shrink-0" />
+                    </div>
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Admin Tools Panel Button */}
+            {isAdminMode && (
+              <button
+                onClick={() => {
+                  window.location.hash = "#admin-diagnostics";
+                  setCurrentTab("reflections");
+                  setIsMenuOpen(false);
+                }}
+                className={`w-full flex items-center justify-center space-x-2 p-3 mt-1.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer border ${
+                  currentTab === "reflections" && window.location.hash === "#admin-diagnostics"
+                    ? "bg-amber-600 border-amber-600 text-white shadow-md"
+                    : "bg-[#1d2d5f]/40 border-amber-500/30 text-amber-400 hover:bg-[#253975]/40"
+                }`}
+              >
+                <Settings className="w-4 h-4 flex-shrink-0" />
+                <span>⚙️ 管理員工具</span>
+              </button>
+            )}
           </div>
         </div>
       )}

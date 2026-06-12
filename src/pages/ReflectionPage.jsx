@@ -704,12 +704,8 @@ export default function ReflectionPage() {
   // Check if current user is admin/dev or beta tester to see the diagnostics section
   const [isAdminMode, setIsAdminMode] = useState(() => {
     if (typeof window === "undefined") return false;
-    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-    if (isLocal) {
-      const params = new URLSearchParams(window.location.search);
-      return params.has("admin") || params.has("debug") || params.has("beta");
-    }
-    return false;
+    const params = new URLSearchParams(window.location.search);
+    return params.has("admin") || params.has("debug") || params.has("beta");
   });
 
   // Form State
@@ -857,6 +853,29 @@ export default function ReflectionPage() {
   const [importJson, setImportJson] = useState("");
   const [copySuccess, setCopySuccess] = useState(false);
   const [selectedLocalKeys, setSelectedLocalKeys] = useState([]);
+
+  // Handle hash navigation to show diagnostics panel directly
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const handleHashChange = () => {
+        if (window.location.hash === "#admin-diagnostics") {
+          setDiagnosticsOpen(true);
+          setTimeout(() => {
+            const el = document.getElementById("admin-diagnostics");
+            if (el) {
+              el.scrollIntoView({ behavior: "smooth" });
+            }
+          }, 200);
+        }
+      };
+
+      // Check on mount / load
+      handleHashChange();
+
+      window.addEventListener("hashchange", handleHashChange);
+      return () => window.removeEventListener("hashchange", handleHashChange);
+    }
+  }, []);
 
   // Get current day's special questions for靈感提示
   const currentSpecialQuestions = day ? (specialQuestionsByDay[day] || []) : [];
@@ -2831,7 +2850,7 @@ export default function ReflectionPage() {
 
       {/* SECTION: Administrator Diagnostics & Backup Panel (Only visible in admin/debug/beta mode or local development) */}
       {isAdminMode && (
-        <div className="mt-12 border-t border-slate-200 pt-6">
+        <div id="admin-diagnostics" className="mt-12 border-t border-slate-200 pt-6">
           <button
             onClick={() => setDiagnosticsOpen(!diagnosticsOpen)}
             className="w-full flex items-center justify-between py-3 px-4 bg-slate-100 hover:bg-slate-200/80 rounded-xl text-xs font-black text-slate-600 transition-all cursor-pointer"
