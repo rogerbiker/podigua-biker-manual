@@ -127,6 +127,10 @@ export default function Header({ currentTab, setCurrentTab }) {
 
                   <button
                     onClick={() => {
+                      if (!isAdminMode) {
+                        alert("⚠️ 此功能為管理員專用診斷工具，請使用管理員授權連結 (?admin=true) 進入以啟用。");
+                        return;
+                      }
                       window.location.hash = "#admin-diagnostics";
                       setCurrentTab("reflections");
                       setIsMenuOpen(false);
